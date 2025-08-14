@@ -40,6 +40,19 @@ const menuItems = [
 
 function AuthButton() {
   const { user, loading, signInWithGoogle, signOut } = useAuth();
+  const [isSigningIn, setIsSigningIn] = React.useState(false);
+
+  const handleSignIn = async () => {
+    setIsSigningIn(true);
+    try {
+      await signInWithGoogle();
+    } catch (error) {
+      console.error("Sign in failed", error);
+      // Optionally show a toast notification here
+    } finally {
+      setIsSigningIn(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -68,8 +81,12 @@ function AuthButton() {
   }
 
   return (
-    <Button onClick={signInWithGoogle} className="w-full">
-      <LogIn className="mr-2 h-4 w-4" />
+    <Button onClick={handleSignIn} disabled={isSigningIn} className="w-full">
+      {isSigningIn ? (
+        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+      ) : (
+        <LogIn className="mr-2 h-4 w-4" />
+      )}
       Login with Google
     </Button>
   );
