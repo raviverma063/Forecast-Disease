@@ -17,27 +17,35 @@ export default function ProfilePage() {
   const { toast } = useToast();
 
   const handleUseCurrentLocation = () => {
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        const { latitude, longitude } = position.coords;
-        // In a real app, you'd use a geocoding service to convert lat/lng to an address.
-        // For this example, we'll just show the coordinates.
-        const formattedLocation = `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`;
-        setLocation(formattedLocation);
-        toast({
-          title: 'Location Updated',
-          description: 'Your current location has been set.',
-        });
-      },
-      (error) => {
-        console.error("Geolocation error:", error);
-        toast({
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const { latitude, longitude } = position.coords;
+          // In a real app, you'd use a geocoding service to convert lat/lng to an address.
+          // For this example, we'll just show the coordinates.
+          const formattedLocation = `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`;
+          setLocation(formattedLocation);
+          toast({
+            title: 'Location Updated',
+            description: 'Your current location has been set.',
+          });
+        },
+        (error) => {
+          console.error("Geolocation error:", error);
+          toast({
+            variant: 'destructive',
+            title: 'Error',
+            description: 'Could not get your location. Please check browser permissions and try again.',
+          });
+        }
+      );
+    } else {
+       toast({
           variant: 'destructive',
           title: 'Error',
-          description: 'Could not get your location. Please enter it manually.',
+          description: 'Geolocation is not supported by your browser.',
         });
-      }
-    );
+    }
   };
 
   return (
