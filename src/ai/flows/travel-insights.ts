@@ -31,6 +31,7 @@ const UserProfileSchema = z.object({
   vaccinations: z.array(z.string()),
   medications: z.array(z.string()),
 });
+export type UserProfile = z.infer<typeof UserProfileSchema>;
 
 const LiveDataSchema = z.object({
   disease: z.object({
@@ -77,6 +78,7 @@ const LiveDataSchema = z.object({
     ambulance: z.string(),
   }),
 });
+export type LiveData = z.infer<typeof LiveDataSchema>;
 
 const CombinedInputSchema = z.object({
   trip: TripInputSchema,
@@ -294,8 +296,8 @@ const travelInsightsFlow = ai.defineFlow(
 // Wrapper function to be called from the frontend.
 export async function travelInsights(
   trip: TripInput,
-  profile: UserProfileSchema,
-  live: LiveDataSchema
+  profile: UserProfile,
+  live: LiveData
 ): Promise<TravelInsightsOutput> {
   return travelInsightsFlow({ trip, profile, live });
 }

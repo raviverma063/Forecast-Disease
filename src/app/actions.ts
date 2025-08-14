@@ -3,8 +3,8 @@
 import {
   travelInsights,
   type TripInput,
-  type UserProfileSchema as UserProfile,
-  type LiveDataSchema as LiveData,
+  type UserProfile,
+  type LiveData,
 } from '@/ai/flows/travel-insights';
 import {
   riskFactorSummary,
