@@ -10,10 +10,11 @@ import {
 } from 'react';
 import {
   onAuthStateChanged,
-  signInWithPopup,
+  signInWithRedirect,
   GoogleAuthProvider,
   signOut as firebaseSignOut,
   User,
+  getRedirectResult,
 } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 
@@ -36,15 +37,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setLoading(false);
     });
 
+    getRedirectResult(auth)
+      .then((result) => {
+        if (result) {
+          // This gives you a Google Access Token. You can use it to access the Google API.
+          // const credential = GoogleAuthProvider.credentialFromResult(result);
+          // const token = credential.accessToken;
+          // The signed-in user info.
+          // const user = result.user;
+        }
+      })
+      .catch((error) => {
+        console.error("Error getting redirect result", error);
+      }).finally(() => {
+        setLoading(false);
+      });
+
     return () => unsubscribe();
   }, []);
 
   const signInWithGoogle = async () => {
     const provider = new GoogleAuthProvider();
+    setLoading(true);
     try {
-      await signInWithPopup(auth, provider);
+      await signInWithRedirect(auth, provider);
     } catch (error) {
       console.error('Error signing in with Google', error);
+      setLoading(false);
     }
   };
 
