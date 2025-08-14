@@ -14,45 +14,7 @@ import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 
 export default function ProfilePage() {
-  const [isClient, setIsClient] = useState(false);
   const [location, setLocation] = useState('');
-  const { toast } = useToast();
-
-  useEffect(() => {
-    setIsClient(true);
-  }, []);
-
-  const handleUseCurrentLocation = () => {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          const { latitude, longitude } = position.coords;
-          // In a real app, you'd use a reverse geocoding service
-          // to get the address from coordinates.
-          // For this example, we'll just use the coordinates.
-          setLocation(`${latitude.toFixed(4)}, ${longitude.toFixed(4)}`);
-          toast({
-            title: 'Location Found',
-            description: 'Your current location has been filled in.',
-          });
-        },
-        (error) => {
-          toast({
-            variant: 'destructive',
-            title: 'Location Error',
-            description: 'Could not retrieve your location. Please enter it manually.',
-          });
-          console.error('Geolocation error:', error);
-        }
-      );
-    } else {
-      toast({
-        variant: 'destructive',
-        title: 'Geolocation Not Supported',
-        description: 'Your browser does not support geolocation.',
-      });
-    }
-  };
 
   return (
     <div className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6">
@@ -111,12 +73,6 @@ export default function ProfilePage() {
                 <Label htmlFor="location">Location</Label>
                 <div className="flex items-center gap-2">
                   <Input id="location" placeholder="e.g., New York, NY" value={location} onChange={(e) => setLocation(e.target.value)} />
-                  {isClient && (
-                    <Button variant="outline" size="icon" onClick={handleUseCurrentLocation}>
-                        <MapPin className="h-4 w-4" />
-                        <span className="sr-only">Use current location</span>
-                    </Button>
-                  )}
                 </div>
               </div>
 
