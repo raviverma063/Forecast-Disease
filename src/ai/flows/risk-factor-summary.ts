@@ -21,12 +21,15 @@ const RiskFactorSummaryInputSchema = z.object({
 });
 export type RiskFactorSummaryInput = z.infer<typeof RiskFactorSummaryInputSchema>;
 
+const RiskItemSchema = z.object({
+  category: z.enum(['Occupational', 'Environmental', 'Lifestyle', 'Vector']),
+  name: z.string(),
+  value: z.string(),
+  recommendation: z.string(),
+});
+
 const RiskFactorSummaryOutputSchema = z.object({
-  riskSummary: z.string().describe('A summarized view of personalized disease risk factors.'),
-  riskLevel: z
-    .enum(['High', 'Moderate', 'Low'])
-    .describe('Overall risk level based on the analyzed data.'),
-  recommendations: z.string().describe('Preventative measures based on the risk factors.'),
+  risks: z.array(RiskItemSchema).describe('A list of personalized disease risk factors.'),
 });
 export type RiskFactorSummaryOutput = z.infer<typeof RiskFactorSummaryOutputSchema>;
 
@@ -38,7 +41,23 @@ const riskFactorSummaryPrompt = ai.definePrompt({
   name: 'riskFactorSummaryPrompt',
   input: {schema: RiskFactorSummaryInputSchema},
   output: {schema: RiskFactorSummaryOutputSchema},
-  prompt: `You are an AI health assistant providing a summarized view of personalized disease risk factors for the user.\n\nAnalyze the following data to generate a risk summary, determine the overall risk level (High, Moderate, or Low), and provide personalized recommendations.\n\nUser Profile Data: {{{profileData}}}\nLocation: {{{location}}}\nWeather Data: {{{weatherData}}}\nLocal Health Data: {{{localHealthData}}}\nGovernment Health Data (IDSP): {{{governmentHealthData}}}\nEnvironmental Risk Data: {{{environmentRiskData}}}\n\nRisk Summary:\nRisk Level: \nRecommendations: `,
+  prompt: `You are an AI health assistant providing a summarized view of personalized disease risk factors for the user.
+Analyze the following data to generate a structured list of risks.
+For each risk, provide:
+- A category: 'Occupational', 'Environmental', 'Lifestyle', or 'Vector'.
+- A short, specific name for the risk (e.g., 'Copper Toxicity', 'Groundwater Nitrates').
+- The value or metric associated with the risk (e.g., '58µg/dL', 'Cases ↑40%').
+- A concise, actionable recommendation (e.g., 'Chelation advised', 'Fogging scheduled').
+
+Generate 4 distinct risk items based on the input data.
+
+User Profile Data: {{{profileData}}}
+Location: {{{location}}}
+Weather Data: {{{weatherData}}}
+Local Health Data: {{{localHealthData}}}
+Government Health Data (IDSP): {{{governmentHealthData}}}
+Environmental Risk Data: {{{environmentRiskData}}}
+`,
 });
 
 const riskFactorSummaryFlow = ai.defineFlow(
