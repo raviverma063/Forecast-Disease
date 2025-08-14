@@ -8,10 +8,33 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { MapPin } from 'lucide-react';
 import { useState } from 'react';
+
+const upDistricts = [
+  'Agra', 'Aligarh', 'Allahabad', 'Ambedkar Nagar', 'Amethi', 'Amroha', 'Auraiya', 'Azamgarh', 'Baghpat', 'Bahraich',
+  'Ballia', 'Balrampur', 'Banda', 'Barabanki', 'Bareilly', 'Basti', 'Bhadohi', 'Bijnor', 'Budaun', 'Bulandshahr',
+  'Chandauli', 'Chitrakoot', 'Deoria', 'Etah', 'Etawah', 'Faizabad', 'Farrukhabad', 'Fatehpur', 'Firozabad',
+  'Gautam Buddha Nagar', 'Ghaziabad', 'Ghazipur', 'Gonda', 'Gorakhpur', 'Hamirpur', 'Hapur', 'Hardoi', 'Hathras',
+  'Jalaun', 'Jaunpur', 'Jhansi', 'Kannauj', 'Kanpur Dehat', 'Kanpur Nagar', 'Kasganj', 'Kaushambi', 'Kheri',
+  'Kushinagar', 'Lalitpur', 'Lucknow', 'Maharajganj', 'Mahoba', 'Mainpuri', 'Mathura', 'Mau', 'Meerut', 'Mirzapur',
+  'Moradabad', 'Muzaffarnagar', 'Pilibhit', 'Pratapgarh', 'Raebareli', 'Rampur', 'Saharanpur', 'Sambhal',
+  'Sant Kabir Nagar', 'Sant Ravidas Nagar', 'Shahjahanpur', 'Shamli', 'Shravasti', 'Siddharthnagar', 'Sitapur',
+  'Sonbhadra', 'Sultanpur', 'Unnao', 'Varanasi'
+];
+
+const occupations = [
+    'Student', 'Software Engineer', 'Doctor', 'Teacher', 'Farmer', 'Business Owner', 'Government Employee', 'Laborer', 'Homemaker', 'Other'
+];
+
+const chronicDiseases = [
+    'None', 'Diabetes', 'Hypertension', 'Asthma', 'Arthritis', 'Heart Disease', 'Kidney Disease', 'Other'
+];
+
+const allergies = [
+    'None', 'Pollen', 'Dust Mites', 'Peanuts', 'Penicillin', 'Latex', 'Other'
+];
 
 export default function ProfilePage() {
   const [location, setLocation] = useState('');
@@ -106,33 +129,64 @@ export default function ProfilePage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="location">Location</Label>
+                <Label htmlFor="location">Location (District)</Label>
                 <div className="flex gap-2">
-                  <Input
-                    id="location"
-                    placeholder="e.g., New York, NY"
-                    value={location}
-                    onChange={(e) => setLocation(e.target.value)}
-                  />
-                  <Button variant="outline" size="icon" onClick={handleUseCurrentLocation} aria-label="Use current location">
-                    <MapPin className="w-4 h-4" />
-                  </Button>
+                    <Select onValueChange={setLocation}>
+                        <SelectTrigger id="location">
+                            <SelectValue placeholder="Select your district" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {upDistricts.map(district => (
+                                <SelectItem key={district} value={district}>{district}</SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                    <Button variant="outline" size="icon" onClick={handleUseCurrentLocation} aria-label="Use current location">
+                        <MapPin className="w-4 h-4" />
+                    </Button>
                 </div>
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="occupation">Occupation</Label>
-                <Input id="occupation" placeholder="e.g., Software Engineer" />
+                <Select>
+                    <SelectTrigger id="occupation">
+                        <SelectValue placeholder="Select your occupation" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        {occupations.map(occ => (
+                            <SelectItem key={occ} value={occ}>{occ}</SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="diseases">Current or Chronic Diseases</Label>
-                <Textarea id="diseases" placeholder="e.g., Asthma, Diabetes" />
+                <Select>
+                    <SelectTrigger id="diseases">
+                        <SelectValue placeholder="Select a disease if applicable" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        {chronicDiseases.map(disease => (
+                            <SelectItem key={disease} value={disease}>{disease}</SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="allergies">Known Allergies</Label>
-                <Textarea id="allergies" placeholder="e.g., Peanuts, Pollen" />
+                <Select>
+                    <SelectTrigger id="allergies">
+                        <SelectValue placeholder="Select an allergy if applicable" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        {allergies.map(allergy => (
+                            <SelectItem key={allergy} value={allergy}>{allergy}</SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
               </div>
             </div>
             <Button>Save Changes</Button>
