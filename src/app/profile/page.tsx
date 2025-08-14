@@ -15,6 +15,36 @@ import { useToast } from '@/hooks/use-toast';
 
 export default function ProfilePage() {
   const [location, setLocation] = useState('');
+  const { toast } = useToast();
+
+  const handleUseCurrentLocation = () => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const { latitude, longitude } = position.coords;
+          // For now, we'll just set the lat/long. A reverse geocoding service would be needed for a full address.
+          setLocation(`${latitude.toFixed(5)}, ${longitude.toFixed(5)}`);
+          toast({
+            title: 'Location Updated',
+            description: 'Your location has been set to your current coordinates.',
+          });
+        },
+        () => {
+          toast({
+            variant: 'destructive',
+            title: 'Location Error',
+            description: 'Could not retrieve your location. Please enable location services.',
+          });
+        }
+      );
+    } else {
+       toast({
+        variant: 'destructive',
+        title: 'Location Error',
+        description: 'Geolocation is not supported by your browser.',
+      });
+    }
+  };
 
   return (
     <div className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6">
@@ -51,7 +81,7 @@ export default function ProfilePage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                  <div className="space-y-2">
                   <Label htmlFor="dob">Date of Birth</Label>
-                  <Input id="dob" placeholder="YYYY-MM-DD" />
+                  <Input id="dob" placeholder="YYYY-MM-DD" type="date" />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="sex">Sex</Label>
@@ -73,6 +103,9 @@ export default function ProfilePage() {
                 <Label htmlFor="location">Location</Label>
                 <div className="flex items-center gap-2">
                   <Input id="location" placeholder="e.g., New York, NY" value={location} onChange={(e) => setLocation(e.target.value)} />
+                  <Button variant="outline" size="icon" onClick={handleUseCurrentLocation} aria-label="Use current location">
+                    <MapPin className="h-4 w-4" />
+                  </Button>
                 </div>
               </div>
 
