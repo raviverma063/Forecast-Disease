@@ -9,16 +9,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Calendar } from '@/components/ui/calendar';
-import { CalendarIcon, MapPin } from 'lucide-react';
+import { MapPin } from 'lucide-react';
 import { useState, useEffect } from 'react';
-import { format } from 'date-fns';
-import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 
 export default function ProfilePage() {
-  const [date, setDate] = useState<Date>();
   const [isClient, setIsClient] = useState(false);
   const [location, setLocation] = useState('');
   const { toast } = useToast();
@@ -92,33 +87,9 @@ export default function ProfilePage() {
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
+                 <div className="space-y-2">
                   <Label htmlFor="dob">Date of Birth</Label>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant={'outline'}
-                        className={cn(
-                          'w-full justify-start text-left font-normal',
-                          !date && 'text-muted-foreground'
-                        )}
-                      >
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        {date ? format(date, 'PPP') : <span>Pick a date</span>}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0">
-                     {isClient && <Calendar
-                        mode="single"
-                        selected={date}
-                        onSelect={setDate}
-                        captionLayout="dropdown-buttons"
-                        fromYear={1900}
-                        toYear={new Date().getFullYear()}
-                        initialFocus
-                      />}
-                    </PopoverContent>
-                  </Popover>
+                  <Input id="dob" placeholder="YYYY-MM-DD" />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="sex">Sex</Label>
@@ -140,10 +111,12 @@ export default function ProfilePage() {
                 <Label htmlFor="location">Location</Label>
                 <div className="flex items-center gap-2">
                   <Input id="location" placeholder="e.g., New York, NY" value={location} onChange={(e) => setLocation(e.target.value)} />
-                  <Button variant="outline" size="icon" onClick={handleUseCurrentLocation}>
-                    <MapPin className="h-4 w-4" />
-                    <span className="sr-only">Use current location</span>
-                  </Button>
+                  {isClient && (
+                    <Button variant="outline" size="icon" onClick={handleUseCurrentLocation}>
+                        <MapPin className="h-4 w-4" />
+                        <span className="sr-only">Use current location</span>
+                    </Button>
+                  )}
                 </div>
               </div>
 
