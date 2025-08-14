@@ -53,14 +53,12 @@ export default function ProfilePage() {
     navigator.geolocation.getCurrentPosition(
       (position) => {
         const { latitude, longitude } = position.coords;
-        // This is a mock conversion. In a real app, you would use a geocoding API
-        // to convert coordinates to a district name. We'll set it to a default
-        // for demonstration purposes as a real geocoding API is out of scope.
-        const district = 'Lucknow'; 
-        setLocation(district);
+        // In a real app, you would use a geocoding API to convert coordinates to a district name.
+        // As a real geocoding API is out of scope, we will show the coordinates to the user
+        // and ask them to select their district manually.
         toast({
-          title: 'Location Updated',
-          description: `Your location has been set to ${district} based on your coordinates (${latitude.toFixed(2)}, ${longitude.toFixed(2)}).`,
+          title: 'Location Fetched',
+          description: `Your coordinates are Lat: ${latitude.toFixed(4)}, Lon: ${longitude.toFixed(4)}. Please select your district from the list.`,
         });
       },
       (error) => {
@@ -82,7 +80,7 @@ export default function ProfilePage() {
             break;
         }
 
-        console.error('Geolocation error:', error.message, `(Code: ${error.code})`);
+        console.error(`Geolocation error (Code: ${error.code}):`, error.message);
 
         toast({
           variant: 'destructive',
