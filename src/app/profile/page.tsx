@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useToast } from '@/hooks/use-toast';
 import { useState } from 'react';
 import Script from 'next/script';
+import { Loader2, LocateFixed } from 'lucide-react';
 
 const occupations = [
     'Student', 'Software Engineer', 'Doctor', 'Teacher', 'Farmer', 'Business Owner', 'Government Employee', 'Laborer', 'Homemaker', 'Other'
@@ -27,41 +28,95 @@ const allergies = [
 export default function ProfilePage() {
   const [location, setLocation] = useState('');
   const [isScriptLoaded, setIsScriptLoaded] = useState(false);
+  const [isLocating, setIsLocating] = useState(false);
   const { toast } = useToast();
-
-  const initializeAutocomplete = () => {
-    if (typeof window.google === 'undefined' || !window.google.maps || !window.google.maps.places) {
-        toast({
-            variant: 'destructive',
-            title: 'Error',
-            description: 'Google Maps script could not be loaded.',
-        });
-        return;
-    }
-    const autocomplete = new window.google.maps.places.Autocomplete(
-      document.getElementById('location-autocomplete') as HTMLInputElement,
-      {
-        types: ['(regions)'],
-        componentRestrictions: { country: 'in' },
-      }
-    );
-    autocomplete.addListener('place_changed', () => {
-      const place = autocomplete.getPlace();
-      if (place.formatted_address) {
-        setLocation(place.formatted_address);
-      }
-    });
-  };
 
   const handleScriptLoad = () => {
     setIsScriptLoaded(true);
-    initializeAutocomplete();
   }
+
+  const handleUseCurrentLocation = () => {
+    if (!navigator.geolocation) {
+      toast({
+        variant: 'destructive',
+        title: 'Geolocation Error',
+        description: 'Geolocation is not supported by your browser.',
+      });
+      return;
+    }
+
+    if (!isScriptLoaded || !window.google) {
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Location services are not ready yet. Please try again in a moment.',
+      });
+      return;
+    }
+    
+    setIsLocating(true);
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const geocoder = new window.google.maps.Geocoder();
+        const latlng = {
+          lat: position.coords.latitude,
+          lng: position.coords.longitude,
+        };
+        geocoder.geocode({ location: latlng }, (results, status) => {
+          setIsLocating(false);
+          if (status === 'OK') {
+            if (results && results[0]) {
+              setLocation(results[0].formatted_address);
+              toast({
+                title: 'Location Found',
+                description: `Set location to: ${results[0].formatted_address}`,
+              });
+            } else {
+              toast({
+                variant: 'destructive',
+                title: 'Geolocation Error',
+                description: 'No results found for your location.',
+              });
+            }
+          } else {
+            toast({
+              variant: 'destructive',
+              title: 'Geolocation Error',
+              description: `Geocoder failed due to: ${status}`,
+            });
+          }
+        });
+      },
+      (error) => {
+        setIsLocating(false);
+        let description = 'An unknown error occurred.';
+        switch (error.code) {
+          case error.PERMISSION_DENIED:
+            description = 'You denied the request for Geolocation.';
+            break;
+          case error.POSITION_UNAVAILABLE:
+            description = 'Location information is unavailable.';
+            break;
+          case error.TIMEOUT:
+            description = 'The request to get user location timed out.';
+            break;
+        }
+        toast({
+          variant: 'destructive',
+          title: 'Geolocation Error',
+          description: description,
+        });
+        console.error('Geolocation error:', error);
+      }
+    );
+  };
+
 
   return (
     <>
     <Script
-        src={`https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&libraries=places`}
+        src={`https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&libraries=places,geocoding`}
         onLoad={handleScriptLoad}
         async
         defer
@@ -121,14 +176,24 @@ export default function ProfilePage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="location-autocomplete">Location (District)</Label>
-                <Input 
-                    id="location-autocomplete" 
-                    placeholder="Enter your district" 
-                    value={location}
-                    onChange={(e) => setLocation(e.target.value)}
-                    disabled={!isScriptLoaded}
-                />
+                <Label htmlFor="location">Location (District)</Label>
+                <div className="flex items-center gap-2">
+                    <Input 
+                        id="location" 
+                        placeholder="Your location" 
+                        value={location}
+                        onChange={(e) => setLocation(e.target.value)}
+                    />
+                    <Button 
+                        type="button" 
+                        variant="outline"
+                        onClick={handleUseCurrentLocation}
+                        disabled={!isScriptLoaded || isLocating}
+                    >
+                        {isLocating ? <Loader2 className="animate-spin" /> : <LocateFixed />}
+                        <span className="sr-only">Use Current Location</span>
+                    </Button>
+                </div>
                 {!isScriptLoaded && <p className="text-sm text-muted-foreground">Loading location services...</p>}
               </div>
 
