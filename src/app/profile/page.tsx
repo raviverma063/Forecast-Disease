@@ -35,7 +35,7 @@ export default function ProfilePage() {
   const [isLocating, setIsLocating] = useState(false);
   const { toast } = useToast();
 
-  const handleUseCurrentLocation = async () => {
+  const handleUseCurrentLocation = () => {
     if (!IPGEOLOCATION_API_KEY) {
       toast({
         variant: 'destructive',
@@ -46,47 +46,78 @@ export default function ProfilePage() {
     }
 
     setIsLocating(true);
-    try {
-      const response = await fetch(`https://api.ipgeolocation.io/ipgeo?apiKey=${IPGEOLOCATION_API_KEY}`);
-      if (!response.ok) {
-        throw new Error('Failed to fetch location data.');
-      }
-      const data = await response.json();
-      
-      const detectedCity = data.city;
-      const detectedDistrict = data.district;
-
-      let foundDistrict = '';
-
-      if (detectedDistrict && uttarPradeshDistricts.includes(detectedDistrict)) {
-          foundDistrict = detectedDistrict;
-      } else if (detectedCity && uttarPradeshDistricts.includes(detectedCity)) {
-          foundDistrict = detectedCity;
-      }
-
-      if (foundDistrict) {
-        setLocation(foundDistrict);
-        toast({
-          title: 'Location Found',
-          description: `Set district to: ${foundDistrict}`,
-        });
-      } else {
-        toast({
-          variant: 'destructive',
-          title: 'Location Not Matched',
-          description: `Your detected city/district (${detectedCity || detectedDistrict}) is not in the list of Uttar Pradesh districts.`,
-        });
-      }
-    } catch (error) {
-      console.error('Geolocation error:', error);
+    if (!navigator.geolocation) {
       toast({
         variant: 'destructive',
-        title: 'Geolocation Error',
-        description: 'Could not determine your location. Please select it manually.',
+        title: 'Geolocation Not Supported',
+        description: 'Your browser does not support geolocation.',
       });
-    } finally {
       setIsLocating(false);
+      return;
     }
+
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        const { latitude, longitude } = position.coords;
+        try {
+          const response = await fetch(
+            `https://api.ipgeolocation.io/getip`
+          );
+          if (!response.ok) {
+            throw new Error(`Failed to fetch location data. Status: ${response.status}`);
+          }
+          const data = await response.json();
+          const detectedCity = data.city;
+          let foundDistrict = '';
+          if (detectedCity && uttarPradeshDistricts.map(d => d.toLowerCase()).includes(detectedCity.toLowerCase())) {
+              foundDistrict = uttarPradeshDistricts.find(d => d.toLowerCase() === detectedCity.toLowerCase()) || '';
+          }
+          
+          if (foundDistrict) {
+            setLocation(foundDistrict);
+            toast({
+              title: 'Location Found',
+              description: `Set district to: ${foundDistrict}`,
+            });
+          } else {
+            toast({
+              variant: 'destructive',
+              title: 'District Not Matched',
+              description: `Your detected city (${detectedCity}) could not be matched to a district in Uttar Pradesh. Please select it manually.`,
+            });
+          }
+        } catch (error) {
+          console.error('Reverse geocoding error:', error);
+          toast({
+            variant: 'destructive',
+            title: 'Location Error',
+            description: 'Could not determine your district from your coordinates. Please select it manually.',
+          });
+        } finally {
+          setIsLocating(false);
+        }
+      },
+      (error) => {
+        let description = 'An unknown error occurred while getting your location.';
+        switch(error.code) {
+          case error.PERMISSION_DENIED:
+            description = 'You denied the request for Geolocation.';
+            break;
+          case error.POSITION_UNAVAILABLE:
+            description = 'Location information is unavailable.';
+            break;
+          case error.TIMEOUT:
+            description = 'The request to get user location timed out.';
+            break;
+        }
+        toast({
+          variant: 'destructive',
+          title: 'Geolocation Error',
+          description,
+        });
+        setIsLocating(false);
+      }
+    );
   };
 
   return (
@@ -233,3 +264,5 @@ export default function ProfilePage() {
     </>
   );
 }
+
+    
