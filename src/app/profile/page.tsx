@@ -9,20 +9,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { MapPin } from 'lucide-react';
 import { useState } from 'react';
-
-const upDistricts = [
-  'Agra', 'Aligarh', 'Allahabad', 'Ambedkar Nagar', 'Amethi', 'Amroha', 'Auraiya', 'Azamgarh', 'Baghpat', 'Bahraich',
-  'Ballia', 'Balrampur', 'Banda', 'Barabanki', 'Bareilly', 'Basti', 'Bhadohi', 'Bijnor', 'Budaun', 'Bulandshahr',
-  'Chandauli', 'Chitrakoot', 'Deoria', 'Etah', 'Etawah', 'Faizabad', 'Farrukhabad', 'Fatehpur', 'Firozabad',
-  'Gautam Buddha Nagar', 'Ghaziabad', 'Ghazipur', 'Gonda', 'Gorakhpur', 'Hamirpur', 'Hapur', 'Hardoi', 'Hathras',
-  'Jalaun', 'Jaunpur', 'Jhansi', 'Kannauj', 'Kanpur Dehat', 'Kanpur Nagar', 'Kasganj', 'Kaushambi', 'Kheri',
-  'Kushinagar', 'Lalitpur', 'Lucknow', 'Maharajganj', 'Mahoba', 'Mainpuri', 'Mathura', 'Mau', 'Meerut', 'Mirzapur',
-  'Moradabad', 'Muzaffarnagar', 'Pilibhit', 'Pratapgarh', 'Raebareli', 'Rampur', 'Saharanpur', 'Sambhal',
-  'Sant Kabir Nagar', 'Sant Ravidas Nagar', 'Shahjahanpur', 'Shamli', 'Shravasti', 'Siddharthnagar', 'Sitapur',
-  'Sonbhadra', 'Sultanpur', 'Unnao', 'Varanasi'
-];
+import Script from 'next/script';
 
 const occupations = [
     'Student', 'Software Engineer', 'Doctor', 'Teacher', 'Farmer', 'Business Owner', 'Government Employee', 'Laborer', 'Homemaker', 'Other'
@@ -38,47 +26,46 @@ const allergies = [
 
 export default function ProfilePage() {
   const [location, setLocation] = useState('');
-  const [isFetchingLocation, setIsFetchingLocation] = useState(false);
+  const [isScriptLoaded, setIsScriptLoaded] = useState(false);
   const { toast } = useToast();
 
-  const handleUseCurrentLocation = async () => {
-    setIsFetchingLocation(true);
-    try {
-      const response = await fetch('https://ipapi.co/json/');
-      if (!response.ok) {
-        throw new Error('Failed to fetch location from IP.');
-      }
-      const data = await response.json();
-      
-      const district = data.city;
-      const matchedDistrict = upDistricts.find(d => d.toLowerCase() === district.toLowerCase());
-
-      if (matchedDistrict) {
-        setLocation(matchedDistrict);
+  const initializeAutocomplete = () => {
+    if (typeof window.google === 'undefined' || !window.google.maps || !window.google.maps.places) {
         toast({
-          title: 'Location Set',
-          description: `Your district has been set to ${matchedDistrict}.`,
+            variant: 'destructive',
+            title: 'Error',
+            description: 'Google Maps script could not be loaded.',
         });
-      } else {
-        toast({
-          variant: 'destructive',
-          title: 'District Not Found',
-          description: `We couldn't match your city "${district}" to a district in Uttar Pradesh. Please select it manually.`,
-        });
-      }
-    } catch (error) {
-      console.error('IP Geolocation error:', error);
-      toast({
-        variant: 'destructive',
-        title: 'Error Fetching Location',
-        description: 'Could not get your location from your IP address. Please select it manually.',
-      });
-    } finally {
-      setIsFetchingLocation(false);
+        return;
     }
+    const autocomplete = new window.google.maps.places.Autocomplete(
+      document.getElementById('location-autocomplete') as HTMLInputElement,
+      {
+        types: ['(regions)'],
+        componentRestrictions: { country: 'in' },
+      }
+    );
+    autocomplete.addListener('place_changed', () => {
+      const place = autocomplete.getPlace();
+      if (place.formatted_address) {
+        setLocation(place.formatted_address);
+      }
+    });
   };
 
+  const handleScriptLoad = () => {
+    setIsScriptLoaded(true);
+    initializeAutocomplete();
+  }
+
   return (
+    <>
+    <Script
+        src={`https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&libraries=places`}
+        onLoad={handleScriptLoad}
+        async
+        defer
+      />
     <div className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6">
       <PageHeader title="User Profile" />
       <div className="grid w-full max-w-2xl gap-6 mx-auto">
@@ -134,22 +121,15 @@ export default function ProfilePage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="location">Location (District)</Label>
-                <div className="flex gap-2">
-                    <Select value={location} onValueChange={setLocation}>
-                        <SelectTrigger id="location">
-                            <SelectValue placeholder="Select your district" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            {upDistricts.map(district => (
-                                <SelectItem key={district} value={district}>{district}</SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
-                    <Button variant="outline" size="icon" onClick={handleUseCurrentLocation} aria-label="Use current location" disabled={isFetchingLocation}>
-                        <MapPin className="w-4 h-4" />
-                    </Button>
-                </div>
+                <Label htmlFor="location-autocomplete">Location (District)</Label>
+                <Input 
+                    id="location-autocomplete" 
+                    placeholder="Enter your district" 
+                    value={location}
+                    onChange={(e) => setLocation(e.target.value)}
+                    disabled={!isScriptLoaded}
+                />
+                {!isScriptLoaded && <p className="text-sm text-muted-foreground">Loading location services...</p>}
               </div>
 
               <div className="space-y-2">
@@ -212,5 +192,6 @@ export default function ProfilePage() {
         </Card>
       </div>
     </div>
+    </>
   );
 }
