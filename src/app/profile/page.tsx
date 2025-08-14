@@ -9,9 +9,13 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Script from 'next/script';
 import { Loader2, LocateFixed } from 'lucide-react';
+
+const uttarPradeshDistricts = [
+    'Agra', 'Aligarh', 'Allahabad', 'Ambedkar Nagar', 'Amethi', 'Amroha', 'Auraiya', 'Azamgarh', 'Baghpat', 'Bahraich', 'Ballia', 'Balrampur', 'Banda', 'Barabanki', 'Bareilly', 'Basti', 'Bhadohi', 'Bijnor', 'Budaun', 'Bulandshahr', 'Chandauli', 'Chitrakoot', 'Deoria', 'Etah', 'Etawah', 'Faizabad', 'Farrukhabad', 'Fatehpur', 'Firozabad', 'Gautam Buddha Nagar', 'Ghaziabad', 'Ghazipur', 'Gonda', 'Gorakhpur', 'Hamirpur', 'Hapur', 'Hardoi', 'Hathras', 'Jalaun', 'Jaunpur', 'Jhansi', 'Kannauj', 'Kanpur Dehat', 'Kanpur Nagar', 'Kasganj', 'Kaushambi', 'Kheri', 'Kushinagar', 'Lakhimpur Kheri', 'Lalitpur', 'Lucknow', 'Maharajganj', 'Mahoba', 'Mainpuri', 'Mathura', 'Mau', 'Meerut', 'Mirzapur', 'Moradabad', 'Muzaffarnagar', 'Pilibhit', 'Pratapgarh', 'Raebareli', 'Rampur', 'Saharanpur', 'Sambhal', 'Sant Kabir Nagar', 'Sant Ravidas Nagar', 'Shahjahanpur', 'Shamli', 'Shravasti', 'Siddharthnagar', 'Sitapur', 'Sonbhadra', 'Sultanpur', 'Unnao', 'Varanasi'
+];
 
 const occupations = [
     'Student', 'Software Engineer', 'Doctor', 'Teacher', 'Farmer', 'Business Owner', 'Government Employee', 'Laborer', 'Homemaker', 'Other'
@@ -33,7 +37,7 @@ export default function ProfilePage() {
 
   const handleScriptLoad = () => {
     setIsScriptLoaded(true);
-  }
+  };
 
   const handleUseCurrentLocation = () => {
     if (!navigator.geolocation) {
@@ -67,11 +71,23 @@ export default function ProfilePage() {
           setIsLocating(false);
           if (status === 'OK') {
             if (results && results[0]) {
-              setLocation(results[0].formatted_address);
-              toast({
-                title: 'Location Found',
-                description: `Set location to: ${results[0].formatted_address}`,
-              });
+              const addressComponents = results[0].address_components;
+              const districtComponent = addressComponents.find(c => c.types.includes('administrative_area_level_2'));
+              const district = districtComponent ? districtComponent.long_name.replace(' District', '') : '';
+              
+              if (district && uttarPradeshDistricts.includes(district)) {
+                setLocation(district);
+                 toast({
+                  title: 'Location Found',
+                  description: `Set district to: ${district}`,
+                });
+              } else {
+                 toast({
+                  variant: 'destructive',
+                  title: 'Location Error',
+                  description: `Could not determine district or district is not in Uttar Pradesh. Full address: ${results[0].formatted_address}`,
+                });
+              }
             } else {
               toast({
                 variant: 'destructive',
@@ -178,25 +194,29 @@ export default function ProfilePage() {
               <div className="space-y-2">
                 <Label htmlFor="location">Location (District)</Label>
                 <div className="flex items-center gap-2">
-                    <Input 
-                        id="location" 
-                        placeholder="Your location" 
-                        value={location}
-                        onChange={(e) => setLocation(e.target.value)}
-                    />
-                    <Button 
-                        type="button" 
-                        variant="outline"
-                        onClick={handleUseCurrentLocation}
-                        disabled={!isScriptLoaded || isLocating}
-                    >
-                        {isLocating ? <Loader2 className="animate-spin" /> : <LocateFixed />}
-                        <span className="sr-only">Use Current Location</span>
-                    </Button>
+                  <Select value={location} onValueChange={setLocation}>
+                      <SelectTrigger id="location">
+                          <SelectValue placeholder="Select your district" />
+                      </SelectTrigger>
+                      <SelectContent>
+                          {uttarPradeshDistricts.map(district => (
+                              <SelectItem key={district} value={district}>{district}</SelectItem>
+                          ))}
+                      </SelectContent>
+                  </Select>
+                  <Button 
+                      type="button" 
+                      variant="outline"
+                      onClick={handleUseCurrentLocation}
+                      disabled={!isScriptLoaded || isLocating}
+                  >
+                      {isLocating ? <Loader2 className="animate-spin" /> : <LocateFixed />}
+                      <span className="sr-only">Use Current Location</span>
+                  </Button>
                 </div>
                 {!isScriptLoaded && <p className="text-sm text-muted-foreground">Loading location services...</p>}
               </div>
-
+              
               <div className="space-y-2">
                 <Label htmlFor="occupation">Occupation</Label>
                 <Select>
