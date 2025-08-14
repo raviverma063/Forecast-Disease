@@ -3,6 +3,8 @@
 import {
   travelInsights,
   type TripInput,
+  type UserProfileSchema as UserProfile,
+  type LiveDataSchema as LiveData,
 } from '@/ai/flows/travel-insights';
 import {
   riskFactorSummary,
@@ -16,9 +18,10 @@ import {
   preventativeMeasures,
   type PreventativeMeasuresInput,
 } from '@/ai/flows/preventative-measures';
+import { getLocationByIp } from './services/location-service';
 
 // This is a mock implementation. In a real app, you'd fetch this data.
-const MOCK_USER_PROFILE = {
+const MOCK_USER_PROFILE: UserProfile = {
     age: 30,
     sex: 'M' as const,
     conditions: ["none"],
@@ -28,7 +31,7 @@ const MOCK_USER_PROFILE = {
     medications: []
 };
 
-const MOCK_LIVE_DATA = {
+const MOCK_LIVE_DATA: LiveData = {
     disease: {
         to: { dengue_weekly_cases: 46, typhoid_cluster: true, flu_trend: "stable" },
         from: { dengue_weekly_cases: 12 }
@@ -68,4 +71,11 @@ export async function getPreventativeMeasures(
   input: PreventativeMeasuresInput
 ) {
   return await preventativeMeasures(input);
+}
+
+export async function getLocationFromIp() {
+    // In a real application, you would get the user's IP from the request headers.
+    // For this environment, we'll use a placeholder IP.
+    const placeholderIp = '1.1.1.1';
+    return await getLocationByIp(placeholderIp);
 }
