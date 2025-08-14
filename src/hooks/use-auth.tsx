@@ -32,26 +32,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    const processRedirect = async () => {
+        try {
+            const result = await getRedirectResult(auth);
+            if (result) {
+                // User is available in result.user
+                // This will be handled by onAuthStateChanged, but we can stop loading here.
+            }
+        } catch (error) {
+            console.error("Error getting redirect result", error);
+        } finally {
+            // This part is tricky because onAuthStateChanged will also fire.
+            // We rely on onAuthStateChanged to set the final loading state.
+        }
+    };
+    
+    processRedirect();
+
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setUser(user);
       setLoading(false);
     });
-
-    getRedirectResult(auth)
-      .then((result) => {
-        if (result) {
-          // This gives you a Google Access Token. You can use it to access the Google API.
-          // const credential = GoogleAuthProvider.credentialFromResult(result);
-          // const token = credential.accessToken;
-          // The signed-in user info.
-          // const user = result.user;
-        }
-      })
-      .catch((error) => {
-        console.error("Error getting redirect result", error);
-      }).finally(() => {
-        setLoading(false);
-      });
 
     return () => unsubscribe();
   }, []);
@@ -61,6 +62,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setLoading(true);
     try {
       await signInWithRedirect(auth, provider);
+      // After redirect, the page will reload, and the useEffect above will handle the result.
     } catch (error) {
       console.error('Error signing in with Google', error);
       setLoading(false);
