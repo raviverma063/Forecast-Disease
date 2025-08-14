@@ -1,6 +1,7 @@
 import PageHeader from '@/components/page-header';
 import RiskSummary from '@/components/dashboard/risk-summary';
 import InteractiveVisualization from '@/components/dashboard/interactive-visualization';
+import DiseaseTrendChart from '@/components/dashboard/disease-trend-chart';
 
 export default function DashboardPage() {
   return (
@@ -12,6 +13,9 @@ export default function DashboardPage() {
         </div>
         <div className="lg:col-span-2 xl:col-span-1">
           <InteractiveVisualization />
+        </div>
+        <div className="lg:col-span-2 xl:col-span-3">
+          <DiseaseTrendChart />
         </div>
       </div>
     </div>
