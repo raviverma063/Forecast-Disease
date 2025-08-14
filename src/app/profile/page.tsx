@@ -28,7 +28,11 @@ const allergies = [
     'None', 'Pollen', 'Dust Mites', 'Peanuts', 'Penicillin', 'Latex', 'Other'
 ];
 
-const GOOGLE_MAPS_API_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+declare global {
+    interface Window {
+        google: any;
+    }
+}
 
 export default function ProfilePage() {
   const [location, setLocation] = useState('');
@@ -41,15 +45,6 @@ export default function ProfilePage() {
   }, []);
 
   const handleUseCurrentLocation = () => {
-    if (!GOOGLE_MAPS_API_KEY) {
-      toast({
-        variant: 'destructive',
-        title: 'Configuration Error',
-        description: 'Google Maps API key is missing.',
-      });
-      return;
-    }
-
     setIsLocating(true);
     if (!navigator.geolocation) {
       toast({
@@ -62,55 +57,55 @@ export default function ProfilePage() {
     }
 
     navigator.geolocation.getCurrentPosition(
-      async (position) => {
+      (position) => {
         const { latitude, longitude } = position.coords;
-        try {
-          const response = await fetch(
-            `https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=${GOOGLE_MAPS_API_KEY}`
-          );
-          if (!response.ok) {
-            throw new Error(`Failed to fetch location data. Status: ${response.status}`);
-          }
-          const data = await response.json();
-          if (data.status !== 'OK' || !data.results || data.results.length === 0) {
-            throw new Error(`Geocoding failed: ${data.status} - ${data.error_message || 'No results found.'}`);
-          }
+        const geocoder = new window.google.maps.Geocoder();
+        const latlng = { lat: latitude, lng: longitude };
 
-          const addressComponents = data.results[0].address_components;
-          const districtComponent = addressComponents.find(c => 
-            c.types.includes('administrative_area_level_3') || c.types.includes('administrative_area_level_2')
-          );
-          
-          let foundDistrict = '';
-          if (districtComponent) {
-            const districtName = districtComponent.long_name.replace(/ District/i, '').trim();
-            foundDistrict = uttarPradeshDistricts.find(d => d.toLowerCase() === districtName.toLowerCase()) || '';
-          }
-          
-          if (foundDistrict) {
-            setLocation(foundDistrict);
-            toast({
-              title: 'Location Found',
-              description: `Set district to: ${foundDistrict}`,
-            });
+        geocoder.geocode({ location: latlng }, (results: any, status: any) => {
+          if (status === 'OK') {
+            if (results[0]) {
+              const addressComponents = results[0].address_components;
+              const districtComponent = addressComponents.find((c: any) => 
+                c.types.includes('administrative_area_level_3') || c.types.includes('administrative_area_level_2')
+              );
+              
+              let foundDistrict = '';
+              if (districtComponent) {
+                const districtName = districtComponent.long_name.replace(/ District/i, '').trim();
+                foundDistrict = uttarPradeshDistricts.find(d => d.toLowerCase() === districtName.toLowerCase()) || '';
+              }
+              
+              if (foundDistrict) {
+                setLocation(foundDistrict);
+                toast({
+                  title: 'Location Found',
+                  description: `Set district to: ${foundDistrict}`,
+                });
+              } else {
+                const detectedCity = addressComponents.find((c: any) => c.types.includes('locality'))?.long_name;
+                toast({
+                  variant: 'destructive',
+                  title: 'District Not Found',
+                  description: `Your detected location (${detectedCity || 'Unknown'}) could not be matched to a district in Uttar Pradesh. Please select it manually.`,
+                });
+              }
+            } else {
+              toast({
+                variant: 'destructive',
+                title: 'Location Error',
+                description: 'No results found for your coordinates.',
+              });
+            }
           } else {
-            const detectedCity = addressComponents.find(c => c.types.includes('locality'))?.long_name;
             toast({
               variant: 'destructive',
-              title: 'District Not Found',
-              description: `Your detected location (${detectedCity || 'Unknown'}) could not be matched to a district in Uttar Pradesh. Please select it manually.`,
+              title: 'Geocoder failed',
+              description: `Could not determine address due to: ${status}`,
             });
           }
-        } catch (error) {
-          console.error('Reverse geocoding error:', error);
-          toast({
-            variant: 'destructive',
-            title: 'Location Error',
-            description: 'Could not determine your district from your coordinates. Please select it manually.',
-          });
-        } finally {
           setIsLocating(false);
-        }
+        });
       },
       (error) => {
         let description = 'An unknown error occurred while getting your location.';
