@@ -44,8 +44,8 @@ export default function ProfilePage() {
     if (!navigator.geolocation) {
       toast({
         variant: 'destructive',
-        title: 'Error',
-        description: 'Geolocation is not supported by your browser.',
+        title: 'Geolocation Not Supported',
+        description: 'Your browser does not support geolocation.',
       });
       return;
     }
@@ -53,21 +53,26 @@ export default function ProfilePage() {
     navigator.geolocation.getCurrentPosition(
       (position) => {
         const { latitude, longitude } = position.coords;
-        // In a real app, you'd use a geocoding service to convert lat/lng to an address.
-        // For this example, we'll just show the coordinates.
-        const formattedLocation = `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`;
-        setLocation(formattedLocation);
+        // This is a mock conversion. In a real app, you would use a geocoding API
+        // to convert coordinates to a district name. We'll set it to a default
+        // for demonstration purposes.
+        const district = 'Lucknow'; 
+        setLocation(district);
         toast({
           title: 'Location Updated',
-          description: 'Your current location has been set.',
+          description: `Your location has been set to ${district}.`,
         });
       },
       (error) => {
         console.error('Geolocation error:', error);
+        let description = 'Could not get your location. Please try again.';
+        if (error.code === error.PERMISSION_DENIED) {
+          description = 'Location access was denied. Please check your browser permissions.';
+        }
         toast({
           variant: 'destructive',
-          title: 'Error',
-          description: 'Could not get your location. Please check browser permissions and try again.',
+          title: 'Error Fetching Location',
+          description,
         });
       }
     );
@@ -131,7 +136,7 @@ export default function ProfilePage() {
               <div className="space-y-2">
                 <Label htmlFor="location">Location (District)</Label>
                 <div className="flex gap-2">
-                    <Select onValueChange={setLocation}>
+                    <Select value={location} onValueChange={setLocation}>
                         <SelectTrigger id="location">
                             <SelectValue placeholder="Select your district" />
                         </SelectTrigger>
