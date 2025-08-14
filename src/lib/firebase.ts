@@ -8,7 +8,8 @@ const firebaseConfig = {
   storageBucket: "forecast-frontier-4i7ow.firebasestorage.app",
   apiKey: "AIzaSyCZl6SScpEvPYZa6a-UvsP_uQAd1NkuDdY",
   authDomain: "forecast-frontier-4i7ow.firebaseapp.com",
-  messagingSenderId: "739990883833"
+  messagingSenderId: "739990883833",
+  measurementId: ""
 };
 
 
