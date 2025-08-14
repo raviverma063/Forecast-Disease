@@ -1,3 +1,4 @@
+
 'use client';
 
 import PageHeader from '@/components/page-header';
@@ -8,58 +9,61 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import { useToast } from '@/hooks/use-toast';
 import { MapPin } from 'lucide-react';
 import { useState } from 'react';
-import { useToast } from '@/hooks/use-toast';
 
 export default function ProfilePage() {
   const [location, setLocation] = useState('');
   const { toast } = useToast();
 
   const handleUseCurrentLocation = () => {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          const { latitude, longitude } = position.coords;
-          // In a real app, you'd use a geocoding service to convert lat/lng to an address.
-          // For this example, we'll just show the coordinates.
-          const formattedLocation = `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`;
-          setLocation(formattedLocation);
-          toast({
-            title: 'Location Updated',
-            description: 'Your current location has been set.',
-          });
-        },
-        (error) => {
-          console.error("Geolocation error:", error);
-          toast({
-            variant: 'destructive',
-            title: 'Error',
-            description: 'Could not get your location. Please check browser permissions and try again.',
-          });
-        }
-      );
-    } else {
-       toast({
+    if (!navigator.geolocation) {
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Geolocation is not supported by your browser.',
+      });
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const { latitude, longitude } = position.coords;
+        // In a real app, you'd use a geocoding service to convert lat/lng to an address.
+        // For this example, we'll just show the coordinates.
+        const formattedLocation = `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`;
+        setLocation(formattedLocation);
+        toast({
+          title: 'Location Updated',
+          description: 'Your current location has been set.',
+        });
+      },
+      (error) => {
+        console.error('Geolocation error:', error);
+        toast({
           variant: 'destructive',
           title: 'Error',
-          description: 'Geolocation is not supported by your browser.',
+          description: 'Could not get your location. Please check browser permissions and try again.',
         });
-    }
+      }
+    );
   };
 
   return (
     <div className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6">
       <PageHeader title="User Profile" />
-      <div className="grid gap-6 max-w-2xl mx-auto w-full">
+      <div className="grid w-full max-w-2xl gap-6 mx-auto">
         <Card>
           <CardHeader>
             <CardTitle>Profile Information</CardTitle>
-            <CardDescription>Manage your personal and preference settings to get better predictions.</CardDescription>
+            <CardDescription>
+              Manage your personal and preference settings to get better predictions.
+            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="flex items-center gap-4">
-              <Avatar className="h-20 w-20">
+              <Avatar className="w-20 h-20">
                 <AvatarImage src="https://placehold.co/100x100.png" alt="@user" data-ai-hint="person avatar" />
                 <AvatarFallback>U</AvatarFallback>
               </Avatar>
@@ -69,7 +73,7 @@ export default function ProfilePage() {
               </div>
             </div>
             <div className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div className="space-y-2">
                   <Label htmlFor="name">Full Name</Label>
                   <Input id="name" defaultValue="Alex Doe" />
@@ -80,14 +84,14 @@ export default function ProfilePage() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                 <div className="space-y-2">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <div className="space-y-2">
                   <Label htmlFor="dob">Date of Birth</Label>
                   <Input id="dob" placeholder="YYYY-MM-DD" type="date" />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="sex">Sex</Label>
-                   <Select>
+                  <Select>
                     <SelectTrigger id="sex">
                       <SelectValue placeholder="Select sex" />
                     </SelectTrigger>
@@ -104,14 +108,19 @@ export default function ProfilePage() {
               <div className="space-y-2">
                 <Label htmlFor="location">Location</Label>
                 <div className="flex gap-2">
-                    <Input id="location" placeholder="e.g., New York, NY" value={location} onChange={(e) => setLocation(e.target.value)} />
-                    <Button variant="outline" size="icon" onClick={handleUseCurrentLocation} aria-label="Use current location">
-                        <MapPin className="h-4 w-4" />
-                    </Button>
+                  <Input
+                    id="location"
+                    placeholder="e.g., New York, NY"
+                    value={location}
+                    onChange={(e) => setLocation(e.target.value)}
+                  />
+                  <Button variant="outline" size="icon" onClick={handleUseCurrentLocation} aria-label="Use current location">
+                    <MapPin className="w-4 h-4" />
+                  </Button>
                 </div>
               </div>
 
-               <div className="space-y-2">
+              <div className="space-y-2">
                 <Label htmlFor="occupation">Occupation</Label>
                 <Input id="occupation" placeholder="e.g., Software Engineer" />
               </div>
@@ -121,11 +130,10 @@ export default function ProfilePage() {
                 <Textarea id="diseases" placeholder="e.g., Asthma, Diabetes" />
               </div>
 
-               <div className="space-y-2">
+              <div className="space-y-2">
                 <Label htmlFor="allergies">Known Allergies</Label>
                 <Textarea id="allergies" placeholder="e.g., Peanuts, Pollen" />
               </div>
-
             </div>
             <Button>Save Changes</Button>
           </CardContent>
@@ -135,11 +143,11 @@ export default function ProfilePage() {
           <CardHeader>
             <CardTitle>Prediction History</CardTitle>
             <CardDescription>A log of your past generated predictions and insights.</CardDescription>
-          </Header>
+          </CardHeader>
           <CardContent>
-            <div className="text-center text-muted-foreground p-8 border-dashed border-2 rounded-lg">
-                <p>Your prediction history is empty.</p>
-                <p className="text-sm">Generated insights will appear here.</p>
+            <div className="p-8 text-center border-2 border-dashed rounded-lg text-muted-foreground">
+              <p>Your prediction history is empty.</p>
+              <p className="text-sm">Generated insights will appear here.</p>
             </div>
           </CardContent>
         </Card>
