@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useToast } from '@/hooks/use-toast';
 import { useState, useEffect } from 'react';
 import { Loader2, LocateFixed } from 'lucide-react';
+import { MultiSelect } from '@/components/ui/multi-select';
 
 const uttarPradeshDistricts = [
     'Agra', 'Aligarh', 'Allahabad', 'Ambedkar Nagar', 'Amethi', 'Amroha', 'Auraiya', 'Azamgarh', 'Baghpat', 'Bahraich', 'Ballia', 'Balrampur', 'Banda', 'Barabanki', 'Bareilly', 'Basti', 'Bhadohi', 'Bijnor', 'Budaun', 'Bulandshahr', 'Chandauli', 'Chitrakoot', 'Deoria', 'Etah', 'Etawah', 'Faizabad', 'Farrukhabad', 'Fatehpur', 'Firozabad', 'Gautam Buddha Nagar', 'Ghaziabad', 'Ghazipur', 'Gonda', 'Gorakhpur', 'Hamirpur', 'Hapur', 'Hardoi', 'Hathras', 'Jalaun', 'Jaunpur', 'Jhansi', 'Kannauj', 'Kanpur Dehat', 'Kanpur Nagar', 'Kasganj', 'Kaushambi', 'Kheri', 'Kushinagar', 'Lakhimpur Kheri', 'Lalitpur', 'Lucknow', 'Maharajganj', 'Mahoba', 'Mainpuri', 'Mathura', 'Mau', 'Meerut', 'Mirzapur', 'Moradabad', 'Muzaffarnagar', 'Pilibhit', 'Pratapgarh', 'Raebareli', 'Rampur', 'Saharanpur', 'Sambhal', 'Sant Kabir Nagar', 'Sant Ravidas Nagar', 'Shahjahanpur', 'Shamli', 'Shravasti', 'Siddharthnagar', 'Sitapur', 'Sonbhadra', 'Sultanpur', 'Unnao', 'Varanasi'
@@ -21,11 +22,24 @@ const occupations = [
 ];
 
 const chronicDiseases = [
-    'None', 'Diabetes', 'Hypertension', 'Asthma', 'Arthritis', 'Heart Disease', 'Kidney Disease', 'Other'
+    { value: 'none', label: 'None' },
+    { value: 'diabetes', label: 'Diabetes' },
+    { value: 'hypertension', label: 'Hypertension' },
+    { value: 'asthma', label: 'Asthma' },
+    { value: 'arthritis', label: 'Arthritis' },
+    { value: 'heart-disease', label: 'Heart Disease' },
+    { value: 'kidney-disease', label: 'Kidney Disease' },
+    { value: 'other', label: 'Other' },
 ];
 
 const allergies = [
-    'None', 'Pollen', 'Dust Mites', 'Peanuts', 'Penicillin', 'Latex', 'Other'
+    { value: 'none', label: 'None' },
+    { value: 'pollen', label: 'Pollen' },
+    { value: 'dust-mites', label: 'Dust Mites' },
+    { value: 'peanuts', label: 'Peanuts' },
+    { value: 'penicillin', label: 'Penicillin' },
+    { value: 'latex', label: 'Latex' },
+    { value: 'other', label: 'Other' },
 ];
 
 declare global {
@@ -39,6 +53,8 @@ export default function ProfilePage() {
   const [isLocating, setIsLocating] = useState(false);
   const [isClient, setIsClient] = useState(false);
   const { toast } = useToast();
+  const [selectedDiseases, setSelectedDiseases] = useState<string[]>([]);
+  const [selectedAllergies, setSelectedAllergies] = useState<string[]>([]);
 
   useEffect(() => {
     setIsClient(true);
@@ -230,31 +246,25 @@ export default function ProfilePage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="diseases">Current or Chronic Diseases</Label>
-                  <Select>
-                      <SelectTrigger id="diseases">
-                          <SelectValue placeholder="Select a disease if applicable" />
-                      </SelectTrigger>
-                      <SelectContent>
-                          {chronicDiseases.map(disease => (
-                              <SelectItem key={disease} value={disease}>{disease}</SelectItem>
-                          ))}
-                      </SelectContent>
-                  </Select>
+                  <Label>Current or Chronic Diseases</Label>
+                  <MultiSelect
+                    options={chronicDiseases}
+                    selected={selectedDiseases}
+                    onChange={setSelectedDiseases}
+                    placeholder="Select diseases..."
+                    className="w-full"
+                  />
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="allergies">Known Allergies</Label>
-                  <Select>
-                      <SelectTrigger id="allergies">
-                          <SelectValue placeholder="Select an allergy if applicable" />
-                      </SelectTrigger>
-                      <SelectContent>
-                          {allergies.map(allergy => (
-                              <SelectItem key={allergy} value={allergy}>{allergy}</SelectItem>
-                          ))}
-                      </SelectContent>
-                  </Select>
+                   <Label>Known Allergies</Label>
+                   <MultiSelect
+                    options={allergies}
+                    selected={selectedAllergies}
+                    onChange={setSelectedAllergies}
+                    placeholder="Select allergies..."
+                    className="w-full"
+                  />
                 </div>
               </div>
               <Button>Save Changes</Button>
