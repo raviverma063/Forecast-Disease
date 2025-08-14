@@ -50,28 +50,20 @@ export default function ProfilePage() {
       }
       const data = await response.json();
       
-      if (data.country_name === 'India' && data.region === 'Uttar Pradesh') {
-        const district = data.city;
-        const matchedDistrict = upDistricts.find(d => d.toLowerCase() === district.toLowerCase());
+      const district = data.city;
+      const matchedDistrict = upDistricts.find(d => d.toLowerCase() === district.toLowerCase());
 
-        if (matchedDistrict) {
-          setLocation(matchedDistrict);
-          toast({
-            title: 'Location Set',
-            description: `Your district has been set to ${matchedDistrict}.`,
-          });
-        } else {
-          toast({
-            variant: 'destructive',
-            title: 'District Not Found',
-            description: `We couldn't match your city "${district}" to a district in Uttar Pradesh. Please select it manually.`,
-          });
-        }
+      if (matchedDistrict) {
+        setLocation(matchedDistrict);
+        toast({
+          title: 'Location Set',
+          description: `Your district has been set to ${matchedDistrict}.`,
+        });
       } else {
         toast({
           variant: 'destructive',
-          title: 'Location Outside Uttar Pradesh',
-          description: 'This feature is available only for users in Uttar Pradesh, India.',
+          title: 'District Not Found',
+          description: `We couldn't match your city "${district}" to a district in Uttar Pradesh. Please select it manually.`,
         });
       }
     } catch (error) {
