@@ -29,6 +29,8 @@ const allergies = [
     'None', 'Pollen', 'Dust Mites', 'Peanuts', 'Penicillin', 'Latex', 'Other'
 ];
 
+const GOOGLE_MAPS_API_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+
 export default function ProfilePage() {
   const [location, setLocation] = useState('');
   const [isScriptLoaded, setIsScriptLoaded] = useState(false);
@@ -72,6 +74,7 @@ export default function ProfilePage() {
           if (status === 'OK') {
             if (results && results[0]) {
               const addressComponents = results[0].address_components;
+              // "administrative_area_level_2" usually corresponds to the district in India.
               const districtComponent = addressComponents.find(c => c.types.includes('administrative_area_level_2'));
               const district = districtComponent ? districtComponent.long_name.replace(' District', '') : '';
               
@@ -85,7 +88,7 @@ export default function ProfilePage() {
                  toast({
                   variant: 'destructive',
                   title: 'Location Error',
-                  description: `Could not determine district or district is not in Uttar Pradesh. Full address: ${results[0].formatted_address}`,
+                  description: `Could not determine district or district is not in Uttar Pradesh. Your detected location: ${results[0].formatted_address}`,
                 });
               }
             } else {
@@ -131,12 +134,21 @@ export default function ProfilePage() {
 
   return (
     <>
-    <Script
-        src={`https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&libraries=places,geocoding`}
-        onLoad={handleScriptLoad}
-        async
-        defer
-      />
+    {GOOGLE_MAPS_API_KEY ? (
+        <Script
+            src={`https://maps.googleapis.com/maps/api/js?key=${GOOGLE_MAPS_API_KEY}&libraries=places,geocoding`}
+            onLoad={handleScriptLoad}
+            async
+            defer
+            strategy="afterInteractive"
+        />
+    ) : (
+        <div className="p-4">
+            <p className="text-destructive text-center font-medium">
+                Google Maps API key is missing. Location services are disabled.
+            </p>
+        </div>
+    )}
     <div className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6">
       <PageHeader title="User Profile" />
       <div className="grid w-full max-w-2xl gap-6 mx-auto">
@@ -214,7 +226,7 @@ export default function ProfilePage() {
                       <span className="sr-only">Use Current Location</span>
                   </Button>
                 </div>
-                {!isScriptLoaded && <p className="text-sm text-muted-foreground">Loading location services...</p>}
+                {!isScriptLoaded && GOOGLE_MAPS_API_KEY && <p className="text-sm text-muted-foreground">Loading location services...</p>}
               </div>
               
               <div className="space-y-2">
