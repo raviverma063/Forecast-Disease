@@ -14,7 +14,7 @@ import {z} from 'genkit';
 const RiskFactorSummaryInputSchema = z.object({
   profileData: z.string().describe('User profile data including health history and preferences.'),
   location: z.string().describe('Current location of the user (e.g., city, state).'),
-  weatherData: z.string().describe('Current weather data for the user\u2019s location.'),
+  weatherData: z.string().describe('Current weather data for the user’s location.'),
   localHealthData: z.string().describe('Local health data for the last week.'),
   governmentHealthData: z.string().describe('Government public health data (IDSP).'),
   environmentRiskData: z.string().describe('Environmental risk data (air quality, potential crops).'),
