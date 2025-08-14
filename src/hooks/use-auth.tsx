@@ -9,7 +9,6 @@ import {
   ReactNode,
 } from 'react';
 import {
-  getAuth,
   onAuthStateChanged,
   signInWithPopup,
   GoogleAuthProvider,
