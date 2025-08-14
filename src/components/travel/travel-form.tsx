@@ -5,7 +5,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { format } from 'date-fns';
-import { CalendarIcon, Loader2, ListChecks, Ambulance, HeartPulse, ShieldAlert, Thermometer, Wind, Droplets } from 'lucide-react';
+import { CalendarIcon, Loader2, ListChecks, Ambulance, HeartPulse, ShieldAlert, Wind, Droplets, Sparkles } from 'lucide-react';
 
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -14,7 +14,6 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Textarea } from '@/components/ui/textarea';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { getTravelInsights } from '@/app/actions';
 import { type TravelInsightsOutput } from '@/ai/flows/travel-insights';
@@ -46,7 +45,7 @@ const RiskReason = ({ children }: { children: React.ReactNode }) => {
     }
     return (
         <li className="flex items-center gap-3">
-            <Icon className="h-4 w-4 text-destructive" />
+            <Icon className="h-4 w-4 text-destructive flex-shrink-0" />
             <span className="text-sm">{children}</span>
         </li>
     );
@@ -245,16 +244,28 @@ export default function TravelForm() {
                     </div>
                 )}
             </div>
-
-            <Alert variant="default" className="bg-primary/5 border-primary/20">
-                <HeartPulse className="h-4 w-4" />
-                <AlertTitle>Personalized Advice</AlertTitle>
+            
+            <Alert variant="default" className="bg-purple-500/10 border-purple-500/20 text-purple-700 dark:text-purple-300 [&>svg]:text-purple-500">
+                <Sparkles className="h-4 w-4" />
+                <AlertTitle>AI-Powered Summary</AlertTitle>
                 <AlertDescription>
-                    <ul className="list-disc pl-5 space-y-1">
-                        {result.advice.map((item, i) => <li key={i}>{item}</li>)}
-                    </ul>
+                   {result.ai_summary.enhanced_advice}
                 </AlertDescription>
             </Alert>
+
+
+            {result.advice.length > 0 && (
+                <Alert variant="default" className="bg-primary/5 border-primary/20">
+                    <HeartPulse className="h-4 w-4" />
+                    <AlertTitle>Personalized Advice</AlertTitle>
+                    <AlertDescription>
+                        <ul className="list-disc pl-5 space-y-1">
+                            {result.advice.map((item, i) => <li key={i}>{item}</li>)}
+                        </ul>
+                    </AlertDescription>
+                </Alert>
+            )}
+
 
             <Alert>
                 <Ambulance className="h-4 w-4" />
@@ -272,6 +283,7 @@ export default function TravelForm() {
                       <ListChecks className="h-5 w-5 text-primary" />
                       <CardTitle className="text-lg">Travel Checklist</CardTitle>
                     </div>
+                     <CardDescription>{result.ai_summary.enhanced_checklist_commentary}</CardDescription>
                 </CardHeader>
                 <CardContent className="p-4 pt-0 space-y-4">
                     {result.checklist.before.length > 0 && (

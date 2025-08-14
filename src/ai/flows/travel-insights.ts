@@ -10,6 +10,7 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
+import { openAI } from 'genkitx-openai';
 
 // 1) Input Schemas
 
@@ -83,7 +84,12 @@ const CombinedInputSchema = z.object({
   live: LiveDataSchema,
 });
 
-// 7) Output Formatter (exact template)
+
+const AiEnhancedOutputSchema = z.object({
+    enhanced_advice: z.string().describe("A conversational, personalized summary of the most critical risks and advice. Combine the provided reasons and advice points into a friendly, 2-3 sentence paragraph. Address the user directly."),
+    enhanced_checklist_commentary: z.string().describe("A brief, encouraging comment about the checklist, e.g., 'A little preparation goes a long way! Here is a checklist to help you pack smart and stay safe.'"),
+});
+
 const TravelInsightsOutputSchema = z.object({
   header: z.string().describe('Trip: {from} → {to} | Date: {dd Mon yyyy} | Mode: {Road/Rail/Air}'),
   risk: z.string().describe('{badge} {BAND}'),
@@ -100,10 +106,53 @@ const TravelInsightsOutputSchema = z.object({
     on_way: z.array(z.string()),
     on_arrival: z.array(z.string()),
   }),
+  ai_summary: AiEnhancedOutputSchema,
 });
 export type TravelInsightsOutput = z.infer<typeof TravelInsightsOutputSchema>;
 
-// 8) Main function (was pseudocode)
+const enhancementPrompt = ai.definePrompt({
+    name: 'travelRiskEnhancementPrompt',
+    models: [openAI('gpt-4-turbo')],
+    input: { schema: z.object({
+        trip: TripInputSchema,
+        profile: UserProfileSchema,
+        risk_band: z.string(),
+        reasons: z.array(z.string()),
+        advice: z.array(z.string()),
+    })},
+    output: { schema: AiEnhancedOutputSchema },
+    prompt: `You are a friendly and helpful AI travel health advisor. Your goal is to provide a user-friendly summary of travel risks.
+
+Based on the provided data, generate a conversational and personalized summary of the most critical risks and advice. Combine the key reasons and advice points into a friendly, 2-3 sentence paragraph. Address the user directly based on their profile.
+
+Also, provide a brief, encouraging comment about the checklist.
+
+Trip Details:
+From: {{trip.from_district}}
+To: {{trip.to_district}}
+Date: {{trip.travel_date}}
+Mode: {{trip.mode}}
+
+User Profile:
+Age: {{profile.age}}
+Conditions: {{#each profile.conditions}}{{this}} {{/each}}
+Pregnant: {{profile.pregnant}}
+
+Calculated Risk Band: {{risk_band}}
+
+Key Risk Factors:
+{{#each reasons}}
+- {{this}}
+{{/each}}
+
+Generated Advice Points:
+{{#each advice}}
+- {{this}}
+{{/each}}
+`,
+});
+
+// 8) Main function
 const travelInsightsFlow = ai.defineFlow(
   {
     name: 'travelInsightsFlow',
@@ -206,6 +255,21 @@ const travelInsightsFlow = ai.defineFlow(
 
     const checklist_arrival = ['Inspect room for mosquito entry points; use nets if available', 'Self-monitor for symptoms like fever, rash, or headache for 3-7 days post-arrival and seek care if needed'];
 
+    // OpenAI Enhancement
+    const enhancementResult = await enhancementPrompt({
+        trip,
+        profile,
+        risk_band: band,
+        reasons: reasons.slice(0, 3),
+        advice: advice.slice(0, 6),
+    });
+
+    const ai_summary = enhancementResult.output ?? {
+        enhanced_advice: "Your personalized travel report is ready. Please review the advice and checklist for a safe journey.",
+        enhanced_checklist_commentary: "A little preparation goes a long way. Here is a checklist to help you pack smart and stay safe."
+    };
+
+
     // 7) Format output
     const travelDate = new Date(trip.travel_date);
     const formattedDate = travelDate.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
@@ -222,6 +286,7 @@ const travelInsightsFlow = ai.defineFlow(
         on_way: checklist_way,
         on_arrival: checklist_arrival,
       },
+      ai_summary,
     };
   }
 );
