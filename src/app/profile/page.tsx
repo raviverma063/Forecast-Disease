@@ -1,4 +1,3 @@
-
 'use client';
 
 import PageHeader from '@/components/page-header';
@@ -16,6 +15,30 @@ import { useToast } from '@/hooks/use-toast';
 export default function ProfilePage() {
   const [location, setLocation] = useState('');
   const { toast } = useToast();
+
+  const handleUseCurrentLocation = () => {
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const { latitude, longitude } = position.coords;
+        // In a real app, you'd use a geocoding service to convert lat/lng to an address.
+        // For this example, we'll just show the coordinates.
+        const formattedLocation = `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`;
+        setLocation(formattedLocation);
+        toast({
+          title: 'Location Updated',
+          description: 'Your current location has been set.',
+        });
+      },
+      (error) => {
+        console.error("Geolocation error:", error);
+        toast({
+          variant: 'destructive',
+          title: 'Error',
+          description: 'Could not get your location. Please enter it manually.',
+        });
+      }
+    );
+  };
 
   return (
     <div className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6">
@@ -72,7 +95,12 @@ export default function ProfilePage() {
 
               <div className="space-y-2">
                 <Label htmlFor="location">Location</Label>
-                <Input id="location" placeholder="e.g., New York, NY" value={location} onChange={(e) => setLocation(e.target.value)} />
+                <div className="flex gap-2">
+                    <Input id="location" placeholder="e.g., New York, NY" value={location} onChange={(e) => setLocation(e.target.value)} />
+                    <Button variant="outline" size="icon" onClick={handleUseCurrentLocation} aria-label="Use current location">
+                        <MapPin className="h-4 w-4" />
+                    </Button>
+                </div>
               </div>
 
                <div className="space-y-2">
