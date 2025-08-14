@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Loader2, LocateFixed } from 'lucide-react';
 
 const uttarPradeshDistricts = [
@@ -33,7 +33,12 @@ const GOOGLE_MAPS_API_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
 export default function ProfilePage() {
   const [location, setLocation] = useState('');
   const [isLocating, setIsLocating] = useState(false);
+  const [isClient, setIsClient] = useState(false);
   const { toast } = useToast();
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   const handleUseCurrentLocation = () => {
     if (!GOOGLE_MAPS_API_KEY) {
@@ -72,7 +77,6 @@ export default function ProfilePage() {
           }
 
           const addressComponents = data.results[0].address_components;
-          // Google may return district in 'administrative_area_level_3' or 'administrative_area_level_2'
           const districtComponent = addressComponents.find(c => 
             c.types.includes('administrative_area_level_3') || c.types.includes('administrative_area_level_2')
           );
@@ -130,6 +134,10 @@ export default function ProfilePage() {
       }
     );
   };
+
+  if (!isClient) {
+    return null;
+  }
 
   return (
     <>
@@ -275,5 +283,3 @@ export default function ProfilePage() {
     </>
   );
 }
-
-    
