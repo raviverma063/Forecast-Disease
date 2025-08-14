@@ -131,7 +131,7 @@ export default function ProfilePage() {
   };
 
   if (!isClient) {
-    return null;
+    return null; // Return null on the server to prevent server-rendering mismatch
   }
 
   return (
