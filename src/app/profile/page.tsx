@@ -55,23 +55,38 @@ export default function ProfilePage() {
         const { latitude, longitude } = position.coords;
         // This is a mock conversion. In a real app, you would use a geocoding API
         // to convert coordinates to a district name. We'll set it to a default
-        // for demonstration purposes.
+        // for demonstration purposes as a real geocoding API is out of scope.
         const district = 'Lucknow'; 
         setLocation(district);
         toast({
           title: 'Location Updated',
-          description: `Your location has been set to ${district}.`,
+          description: `Your location has been set to ${district} based on your coordinates (${latitude.toFixed(2)}, ${longitude.toFixed(2)}).`,
         });
       },
       (error) => {
-        console.error('Geolocation error:', error);
-        let description = 'Could not get your location. Please try again.';
-        if (error.code === error.PERMISSION_DENIED) {
-          description = 'Location access was denied. Please check your browser permissions.';
+        let title = 'Error Fetching Location';
+        let description = 'Could not get your location. Please try again or select it manually.';
+        
+        switch (error.code) {
+          case error.PERMISSION_DENIED:
+            title = 'Location Access Denied';
+            description = 'Please enable location permissions in your browser settings to use this feature.';
+            break;
+          case error.POSITION_UNAVAILABLE:
+            title = 'Location Unavailable';
+            description = 'We were unable to determine your location. Please check your device settings.';
+            break;
+          case error.TIMEOUT:
+            title = 'Request Timed Out';
+            description = 'The request to get your location took too long. Please try again.';
+            break;
         }
+
+        console.error('Geolocation error:', error.message, `(Code: ${error.code})`);
+
         toast({
           variant: 'destructive',
-          title: 'Error Fetching Location',
+          title,
           description,
         });
       }
