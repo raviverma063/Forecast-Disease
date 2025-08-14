@@ -88,7 +88,7 @@ const CombinedInputSchema = z.object({
 
 
 const AiEnhancedOutputSchema = z.object({
-    enhanced_advice: z.string().describe("A conversational, personalized summary of the most critical risks and advice. Combine the provided reasons and advice points into a friendly, 2-3 sentence paragraph. Address the user directly."),
+    enhanced_advice: z.string().describe("A concise, personalized summary of the most critical risks and advice. Get straight to the point. Combine the provided reasons and advice points into a direct, 1-2 sentence paragraph. Address the user directly."),
     enhanced_checklist_commentary: z.string().describe("A brief, encouraging comment about the checklist, e.g., 'A little preparation goes a long way! Here is a checklist to help you pack smart and stay safe.'"),
 });
 
@@ -123,11 +123,11 @@ const enhancementPrompt = ai.definePrompt({
         advice: z.array(z.string()),
     })},
     output: { schema: AiEnhancedOutputSchema },
-    prompt: `You are a friendly and helpful AI travel health advisor. Your goal is to provide a user-friendly summary of travel risks.
+    prompt: `You are an AI travel health advisor. Your goal is to provide a direct, to-the-point summary of travel risks.
 
-Based on the provided data, generate a conversational and personalized summary of the most critical risks and advice. Combine the key reasons and advice points into a friendly, 2-3 sentence paragraph. Address the user directly based on their profile.
+Based on the provided data, generate a concise and personalized summary of the most critical risks and advice. Combine the key reasons and advice points into a direct, 1-2 sentence paragraph. Do not use filler words. Address the user directly based on their profile.
 
-Also, provide a brief, encouraging comment about the checklist.
+Also, provide a brief, encouraging comment for the checklist.
 
 Trip Details:
 From: {{trip.from_district}}
