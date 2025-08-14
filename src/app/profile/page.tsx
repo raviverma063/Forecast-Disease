@@ -38,57 +38,52 @@ const allergies = [
 
 export default function ProfilePage() {
   const [location, setLocation] = useState('');
+  const [isFetchingLocation, setIsFetchingLocation] = useState(false);
   const { toast } = useToast();
 
-  const handleUseCurrentLocation = () => {
-    if (!navigator.geolocation) {
-      toast({
-        variant: 'destructive',
-        title: 'Geolocation Not Supported',
-        description: 'Your browser does not support geolocation.',
-      });
-      return;
-    }
+  const handleUseCurrentLocation = async () => {
+    setIsFetchingLocation(true);
+    try {
+      const response = await fetch('https://ipapi.co/json/');
+      if (!response.ok) {
+        throw new Error('Failed to fetch location from IP.');
+      }
+      const data = await response.json();
+      
+      if (data.country_name === 'India' && data.region === 'Uttar Pradesh') {
+        const district = data.city;
+        const matchedDistrict = upDistricts.find(d => d.toLowerCase() === district.toLowerCase());
 
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        const { latitude, longitude } = position.coords;
-        // In a real app, you would use a geocoding API to convert coordinates to a district name.
-        // As a real geocoding API is out of scope, we will show the coordinates to the user
-        // and ask them to select their district manually.
-        toast({
-          title: 'Location Fetched',
-          description: `Your coordinates are Lat: ${latitude.toFixed(4)}, Lon: ${longitude.toFixed(4)}. Please select your district from the list.`,
-        });
-      },
-      (error) => {
-        let title = 'Error Fetching Location';
-        let description = 'Could not get your location. Please try again or select it manually.';
-        
-        switch (error.code) {
-          case error.PERMISSION_DENIED:
-            title = 'Location Access Denied';
-            description = 'Please enable location permissions in your browser settings to use this feature.';
-            break;
-          case error.POSITION_UNAVAILABLE:
-            title = 'Location Unavailable';
-            description = 'We were unable to determine your location. Please check your device settings.';
-            break;
-          case error.TIMEOUT:
-            title = 'Request Timed Out';
-            description = 'The request to get your location took too long. Please try again.';
-            break;
+        if (matchedDistrict) {
+          setLocation(matchedDistrict);
+          toast({
+            title: 'Location Set',
+            description: `Your district has been set to ${matchedDistrict}.`,
+          });
+        } else {
+          toast({
+            variant: 'destructive',
+            title: 'District Not Found',
+            description: `We couldn't match your city "${district}" to a district in Uttar Pradesh. Please select it manually.`,
+          });
         }
-
-        console.error(`Geolocation error (Code: ${error.code}):`, error.message);
-
+      } else {
         toast({
           variant: 'destructive',
-          title,
-          description,
+          title: 'Location Outside Uttar Pradesh',
+          description: 'This feature is available only for users in Uttar Pradesh, India.',
         });
       }
-    );
+    } catch (error) {
+      console.error('IP Geolocation error:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Error Fetching Location',
+        description: 'Could not get your location from your IP address. Please select it manually.',
+      });
+    } finally {
+      setIsFetchingLocation(false);
+    }
   };
 
   return (
@@ -159,7 +154,7 @@ export default function ProfilePage() {
                             ))}
                         </SelectContent>
                     </Select>
-                    <Button variant="outline" size="icon" onClick={handleUseCurrentLocation} aria-label="Use current location">
+                    <Button variant="outline" size="icon" onClick={handleUseCurrentLocation} aria-label="Use current location" disabled={isFetchingLocation}>
                         <MapPin className="w-4 h-4" />
                     </Button>
                 </div>
