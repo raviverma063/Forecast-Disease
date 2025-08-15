@@ -35,7 +35,7 @@ const menuItems = [
   { href: '/community', label: 'Community', icon: Users2 },
   { href: '/prevention', label: 'Prevention', icon: ShieldCheck },
   { href: '/emergency', label: 'My Emergency', icon: Siren },
-  //{ href: '/profile', label: 'Profile', icon: User },
+  { href: '/profile', label: 'Profile', icon: User },
 ];
 
 function AuthButton() {
