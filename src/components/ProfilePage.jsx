@@ -20,12 +20,47 @@ const districts = [
   "Unnao", "Varanasi"
 ];
 const bloodGroups = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
-const waterSources = ["Borewell", "Tap Water", "River", "Well"];
-const housingTypes = ["Pucca", "Kutcha", "Semi-Pucca"];
-const occupations = ["Brassware Artisan", "Farmer", "Software Developer", "Teacher", "Student", "Business"];
-const diseases = ["Common Cold", "Flu", "Typhoid", "Malaria", "Dengue", "Chikungunya"];
-const chronicConditions = ["Diabetes", "Hypertension", "Asthma", "Arthritis", "Thyroid"];
-const allergies = ["Pollen", "Dust", "Peanuts", "Seafood", "Medication"];
+const waterSources = ["Borewell", "Tap Water", "River", "Well", "Municipal Supply"];
+const housingTypes = ["Pucca", "Kutcha", "Semi-Pucca", "Apartment"];
+const occupations = [
+    "Accountant", "Actor", "Architect", "Artist", "Artisan (Brassware, Pottery, etc.)",
+    "Astrologer", "Author", "Baker", "Banker", "Barber", "Beautician",
+    "Blacksmith", "Bricklayer", "Bus Driver", "Business Owner", "Butcher",
+    "Carpenter", "Cashier", "Chef/Cook", "Chemist", "Civil Engineer", "Cleaner",
+    "Clerk", "Construction Worker", "Consultant", "Customer Service Representative",
+    "Dancer", "Data Entry Operator", "Dentist", "Designer (Fashion, Graphic, etc.)",
+    "Doctor", "Domestic Helper", "Driver (Car, Taxi, Truck)", "Electrician",
+    "Engineer (Mechanical, Software, etc.)", "Factory Worker", "Farmer", "Firefighter",
+    "Fisherman", "Florist", "Government Employee", "Grocer", "Guard", "Homemaker",
+    "Hotel Manager", "IT Professional", "Journalist", "Judge", "Laborer", "Lawyer",
+    "Lecturer", "Librarian", "Mechanic", "Military Personnel", "Musician", "Nurse",
+    "Painter", "Pharmacist", "Photographer", "Pilot", "Plumber", "Police Officer",
+    "Politician", "Priest", "Principal", "Professor", "Real Estate Agent",
+    "Receptionist", "Researcher", "Salesperson", "Scientist", "Security Guard",
+    "Shopkeeper", "Singer", "Social Worker", "Soldier", "Student", "Tailor",
+    "Teacher", "Technician", "Tour Guide", "Translator", "Veterinarian", "Waiter/Waitress",
+    "Weaver", "Welder", "Writer", "Yoga Instructor", "Other"
+];
+// --- ENLARGED HEALTH BLUEPRINT LISTS ---
+const diseases = [
+    "None", "Common Cold", "Influenza (Flu)", "Pneumonia", "Bronchitis", "Strep Throat",
+    "COVID-19", "Dengue", "Malaria", "Chikungunya", "Typhoid", "Cholera",
+    "Hepatitis A/E", "Gastroenteritis (Stomach Flu)", "Food Poisoning",
+    "Urinary Tract Infection (UTI)", "Skin Infection (Fungal, Bacterial)",
+    "Conjunctivitis (Eye Flu)", "Tuberculosis (TB)", "Measles", "Chickenpox"
+];
+const chronicConditions = [
+    "None", "Hypertension (High BP)", "Diabetes (Type 1/Type 2)", "High Cholesterol",
+    "Asthma", "Chronic Obstructive Pulmonary Disease (COPD)", "Arthritis (Rheumatoid/Osteoarthritis)",
+    "Chronic Kidney Disease (CKD)", "Heart Disease", "Thyroid Disorder (Hypo/Hyper)",
+    "Obesity", "Chronic Migraines", "Depression", "Anxiety Disorder",
+    "Polycystic Ovary Syndrome (PCOS)", "Irritable Bowel Syndrome (IBS)", "Chronic Pain"
+];
+const allergies = [
+    "None", "Pollen", "Dust Mites", "Mold", "Animal Dander (Pets)", "Insect Stings",
+    "Peanuts", "Tree Nuts", "Milk", "Eggs", "Soy", "Wheat", "Fish", "Shellfish",
+    "Penicillin", "Aspirin", "Sulfa Drugs", "Latex", "Fragrances"
+];
 
 // --- The Main Profile Component ---
 export default function PrecisionProfileBuilder() {
@@ -39,10 +74,10 @@ export default function PrecisionProfileBuilder() {
     currentDistrict: 'Lucknow',
     waterSource: 'Borewell',
     housingType: 'Pucca',
-    primaryOccupation: 'Brassware Artisan',
-    currentDiseases: '',
-    chronicConditions: '',
-    allergies: '',
+    primaryOccupation: 'Student',
+    currentDiseases: 'None',
+    chronicConditions: 'None',
+    allergies: 'None',
   });
 
   // --- Load data from cache when the page opens ---
