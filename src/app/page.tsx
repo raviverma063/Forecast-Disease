@@ -1,3 +1,4 @@
+import HospitalLocator from '@/components/HospitalLocator';
 import PageHeader from '@/components/page-header';
 import LiveRiskRadar from '@/components/LiveRiskRadar';
 import InteractiveVisualization from '@/components/dashboard/interactive-visualization';
