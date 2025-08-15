@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Card,
   CardContent,
@@ -22,16 +22,7 @@ import { type InteractiveDataInsightsOutput } from '@/ai/flows/interactive-data-
 import { Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
-const MOCK_INPUT_BASE = {
-  profileData: '30-year-old male, no pre-existing conditions',
-  locationData: 'New Delhi, India',
-  weatherData: '35°C, humid',
-  season: 'Post-monsoon',
-  localHealthData: 'Increase in dengue cases',
-  governmentHealthData: 'High alert for vector-borne diseases',
-  environmentRiskData: 'AQI 150, poor',
-};
-
+// This chart data is for demonstration; the AI will provide suggestions based on it.
 const chartData = [
   { month: 'January', cases: 186 },
   { month: 'February', cases: 305 },
@@ -51,15 +42,61 @@ const chartConfig = {
 export default function InteractiveVisualization() {
   const [loading, setLoading] = useState(false);
   const [query, setQuery] = useState('What are the current health trends?');
-  const [result, setResult] = useState<InteractiveDataInsightsOutput | null>(null);
+  const [result, setResult] = useState < InteractiveDataInsightsOutput | null > (null);
   const { toast } = useToast();
+
+  // --- ADDED: Load saved data from cache when the component first opens ---
+  useEffect(() => {
+    const savedQuery = localStorage.getItem('interactiveQuery');
+    const savedResult = localStorage.getItem('interactiveResult');
+    if (savedQuery) {
+      setQuery(JSON.parse(savedQuery));
+    }
+    if (savedResult) {
+      setResult(JSON.parse(savedResult));
+    }
+  }, []);
+
+  // --- ADDED: Save new queries and results to the cache whenever they change ---
+  useEffect(() => {
+    localStorage.setItem('interactiveQuery', JSON.stringify(query));
+    if (result) {
+      localStorage.setItem('interactiveResult', JSON.stringify(result));
+    }
+  }, [query, result]);
+
 
   const handleQuery = async () => {
     if (!query) return;
     setLoading(true);
     setResult(null);
     try {
-      const res = await getInteractiveDataInsights({ ...MOCK_INPUT_BASE, query });
+      // --- MODIFIED: Load the user's real profile data from cache ---
+      const savedProfile = localStorage.getItem('userProfile');
+      const profileData = savedProfile ? JSON.parse(savedProfile) : {};
+
+      // Create a simple text summary of the profile to send to the AI
+      const profileSummary = `
+        Current Location: ${profileData.currentDistrict || 'Not specified'},
+        Age: ${profileData.dob ? new Date().getFullYear() - new Date(profileData.dob).getFullYear() : 'Not specified'},
+        Sex: ${profileData.sex || 'Not specified'},
+        Health Conditions: ${profileData.chronicConditions || 'None'},
+        Allergies: ${profileData.allergies || 'None'}
+      `;
+
+      // Use the real profile data instead of the mock data
+      const res = await getInteractiveDataInsights({
+        profileData: profileSummary,
+        locationData: profileData.currentDistrict || 'Uttar Pradesh, India',
+        // The rest can be mock/static for now
+        weatherData: '30°C, humid',
+        season: 'Monsoon',
+        localHealthData: 'Increase in vector-borne diseases',
+        governmentHealthData: 'High alert for dengue and malaria',
+        environmentRiskData: 'AQI 120, moderate',
+        query
+      });
+
       setResult(res);
     } catch (error) {
       toast({
