@@ -21,7 +21,6 @@ import { Loader2, AlertTriangle, ShieldCheck, Info, MapPin, TrendingUp, Phone } 
 import { useToast } from '@/hooks/use-toast';
 
 // --- Helper function to get the right color and icon for the risk level ---
-// This function is now safer and handles cases where riskLevel is not defined.
 const getRiskAppearance = (riskLevel) => {
     const level = riskLevel || "Low"; // Use "Low" as a default if no risk level exists
     switch (level.toLowerCase()) {
@@ -103,8 +102,69 @@ export default function InteractiveVisualization() {
     }
   };
   
-  // This line is now safe because getRiskAppearance handles undefined/null values
-  const { color, Icon } = getRiskAppearance(result?.riskLevel);
+  // This function will render the results only when they exist
+  const renderResult = () => {
+    if (!result) return null;
+
+    const { color, Icon } = getRiskAppearance(result.riskLevel);
+
+    return (
+      <div className="space-y-4">
+        {/* --- PERSONALIZED RISK SCORE --- */}
+        <div className="p-4 bg-gray-800/50 rounded-lg text-center">
+            <p className="text-sm text-gray-400">Your Personal Risk Score</p>
+            <p className={`text-4xl font-bold ${result.personalRiskScore > 70 ? 'text-red-500' : result.personalRiskScore > 40 ? 'text-orange-400' : 'text-green-400'}`}>
+                {result.personalRiskScore}/100
+            </p>
+            <p className="text-xs text-gray-500">Based on your profile, location, and current conditions.</p>
+        </div>
+
+        {/* --- ACTION-ORIENTED INSIGHT --- */}
+        <div className="p-4 bg-gray-800/50 rounded-lg space-y-3">
+            <div className="flex justify-between text-xs font-medium text-gray-400">
+                <span className="flex items-center gap-1"><MapPin size={12} /> {result.location}</span>
+                <span className={`flex items-center gap-1 ${result.riskLevel === 'High' ? 'text-red-400' : 'text-orange-400'}`}><AlertTriangle size={12} /> Risk: {result.riskLevel}</span>
+                <span className="flex items-center gap-1"><TrendingUp size={12} /> Trend: {result.trend}</span>
+            </div>
+            <p className="text-sm text-gray-300">{result.insight} <span className="font-semibold">{result.riskWindow}</span></p>
+            <div>
+                <h4 className="font-semibold text-gray-200 text-sm mb-2">Immediate Actions:</h4>
+                <ul className="space-y-1 text-xs text-gray-400">
+                    {result.actions && result.actions.map((action, i) => (
+                        <li key={i} className="flex items-start gap-2"><span>•</span>{action}</li>
+                    ))}
+                </ul>
+            </div>
+        </div>
+
+        {/* --- INFORMATIVE VISUALIZATION --- */}
+        <div className="p-4 bg-gray-800/50 rounded-lg">
+            <h4 className="font-semibold text-gray-200 text-sm mb-2">Seasonal Trend & Environmental Factors</h4>
+             <ChartContainer config={{}} className="h-[200px] w-full">
+                <ComposedChart data={chartData}>
+                    <CartesianGrid vertical={false} strokeDasharray="3 3" strokeOpacity={0.3}/>
+                    <XAxis dataKey="month" tickLine={false} axisLine={false} tickMargin={10} fontSize={12} />
+                    <YAxis yAxisId="left" orientation="left" stroke="#888888" fontSize={12} />
+                    <YAxis yAxisId="right" orientation="right" stroke="#888888" fontSize={12} />
+                    <Tooltip content={<ChartTooltipContent />} />
+                    <Bar yAxisId="left" dataKey="cases" name="Cases" radius={4}>
+                        {chartData.map((entry, index) => (
+                            <rect key={`cell-${index}`} fill={getRiskColor(entry.risk)} />
+                        ))}
+                    </Bar>
+                    <Line yAxisId="right" type="monotone" dataKey="temp" name="Temp (°C)" stroke="hsl(var(--warning))" strokeWidth={2} dot={false} />
+                </ComposedChart>
+            </ChartContainer>
+        </div>
+        
+        {/* --- LOCAL RESOURCES --- */}
+        <div className="grid grid-cols-2 gap-2 text-xs">
+            <Button variant="outline" size="sm" className="w-full">Find Nearest Fever Clinic</Button>
+            <Button variant="outline" size="sm" className="w-full flex items-center gap-1"><Phone size={12}/> Emergency Helpline: 108</Button>
+        </div>
+      </div>
+    );
+  };
 
   return (
     <Card className="flex flex-col h-full">
@@ -127,62 +187,7 @@ export default function InteractiveVisualization() {
             <p className="ml-3">Generating personalized insights...</p>
           </div>
         )}
-        {result && (
-          <div className="space-y-4">
-            {/* --- PERSONALIZED RISK SCORE --- */}
-            <div className="p-4 bg-gray-800/50 rounded-lg text-center">
-                <p className="text-sm text-gray-400">Your Personal Risk Score</p>
-                <p className={`text-4xl font-bold ${result.personalRiskScore > 70 ? 'text-red-500' : result.personalRiskScore > 40 ? 'text-orange-400' : 'text-green-400'}`}>
-                    {result.personalRiskScore}/100
-                </p>
-                <p className="text-xs text-gray-500">Based on your profile, location, and current conditions.</p>
-            </div>
-
-            {/* --- ACTION-ORIENTED INSIGHT --- */}
-            <div className="p-4 bg-gray-800/50 rounded-lg space-y-3">
-                <div className="flex justify-between text-xs font-medium text-gray-400">
-                    <span className="flex items-center gap-1"><MapPin size={12} /> {result.location}</span>
-                    <span className={`flex items-center gap-1 ${result.riskLevel === 'High' ? 'text-red-400' : 'text-orange-400'}`}><AlertTriangle size={12} /> Risk: {result.riskLevel}</span>
-                    <span className="flex items-center gap-1"><TrendingUp size={12} /> Trend: {result.trend}</span>
-                </div>
-                <p className="text-sm text-gray-300">{result.insight} <span className="font-semibold">{result.riskWindow}</span></p>
-                <div>
-                    <h4 className="font-semibold text-gray-200 text-sm mb-2">Immediate Actions:</h4>
-                    <ul className="space-y-1 text-xs text-gray-400">
-                        {result.actions.map((action, i) => (
-                            <li key={i} className="flex items-start gap-2"><span>•</span>{action}</li>
-                        ))}
-                    </ul>
-                </div>
-            </div>
-
-            {/* --- INFORMATIVE VISUALIZATION --- */}
-            <div className="p-4 bg-gray-800/50 rounded-lg">
-                <h4 className="font-semibold text-gray-200 text-sm mb-2">Seasonal Trend & Environmental Factors</h4>
-                 <ChartContainer config={{}} className="h-[200px] w-full">
-                    <ComposedChart data={chartData}>
-                        <CartesianGrid vertical={false} strokeDasharray="3 3" strokeOpacity={0.3}/>
-                        <XAxis dataKey="month" tickLine={false} axisLine={false} tickMargin={10} fontSize={12} />
-                        <YAxis yAxisId="left" orientation="left" stroke="#888888" fontSize={12} />
-                        <YAxis yAxisId="right" orientation="right" stroke="#888888" fontSize={12} />
-                        <Tooltip content={<ChartTooltipContent />} />
-                        <Bar yAxisId="left" dataKey="cases" name="Cases" radius={4}>
-                            {chartData.map((entry, index) => (
-                                <rect key={`cell-${index}`} fill={getRiskColor(entry.risk)} />
-                            ))}
-                        </Bar>
-                        <Line yAxisId="right" type="monotone" dataKey="temp" name="Temp (°C)" stroke="hsl(var(--warning))" strokeWidth={2} dot={false} />
-                    </ComposedChart>
-                </ChartContainer>
-            </div>
-            
-            {/* --- LOCAL RESOURCES --- */}
-            <div className="grid grid-cols-2 gap-2 text-xs">
-                <Button variant="outline" size="sm" className="w-full">Find Nearest Fever Clinic</Button>
-                <Button variant="outline" size="sm" className="w-full flex items-center gap-1"><Phone size={12}/> Emergency Helpline: 108</Button>
-            </div>
-          </div>
-        )}
+        {renderResult()}
       </CardContent>
       <CardFooter>
         <Button onClick={handleQuery} disabled={loading || !query} className="w-full">
