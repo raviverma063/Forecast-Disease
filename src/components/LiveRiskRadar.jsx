@@ -5,10 +5,10 @@ import React, { useState, useEffect } from 'react';
 // --- Helper Functions for Display ---
 const getRiskColor = (level) => {
   switch (level) {
-    case 'Immediate': return 'border-red-500';
-    case 'High': return 'border-orange-500';
-    case 'Moderate': return 'border-yellow-500';
-    default: return 'border-gray-500';
+    case 'Immediate': return 'text-red-400';
+    case 'High': return 'text-orange-400';
+    case 'Moderate': return 'text-yellow-400';
+    default: return 'text-gray-400';
   }
 };
 
@@ -78,38 +78,44 @@ export default function LiveRiskRadar() {
 
   return (
     <div className="bg-gray-800 p-6 rounded-lg">
-      <h2 className="text-xl font-bold mb-2 text-white">🔴 Live Disease Risk Radar — Personalized Alerts</h2>
-      <p className="text-sm text-gray-400 mb-6">(Auto-updates daily based on outbreak data, weather, and your profile)</p>
-
-      {risks.length > 0 ? (
-        <div className="space-y-6">
-          {risks.map((risk, index) => (
-            <div key={index} className={`p-4 rounded-lg border-l-4 ${getRiskColor(risk.level)} bg-gray-900/50`}>
-              <h3 className="font-bold text-lg text-white flex items-center gap-2">
-                {getRiskIcon(risk.level)} {risk.level} Threat: {risk.title}
-              </h3>
-              <p className="text-sm text-gray-300 mt-2">
-                <span className="font-semibold">{risk.whyLabel}:</span> {risk.whyText}
-              </p>
-              <div className="mt-4">
-                <h4 className="font-semibold text-white">{risk.actionLabel}:</h4>
-                <ul className="list-none space-y-2 mt-2 text-sm text-gray-300">
-                  {risk.actions.map((action, i) => (
-                    <li key={i} className="flex items-start">
-                      <span className="mr-2 text-lg">{action.emoji}</span>
-                      <span>{action.text}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            </div>
-          ))}
-        </div>
-      ) : (
-        <div className="text-center text-gray-400 py-4">
-          <p>No immediate threats detected for your profile and location.</p>
-        </div>
-      )}
+      <h2 className="text-xl font-bold mb-4 text-white flex items-center gap-2">
+        <span className="text-red-500">🔴</span> Live Disease Risk Radar
+      </h2>
+      
+      <div className="overflow-x-auto">
+        <table className="w-full text-left">
+          <thead>
+            <tr className="border-b border-gray-700">
+              <th className="p-3 text-sm font-semibold text-gray-400">Risk Level</th>
+              <th className="p-3 text-sm font-semibold text-gray-400">Threat</th>
+              <th className="p-3 text-sm font-semibold text-gray-400">Most Important Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {risks.length > 0 ? (
+              risks.map((risk, index) => (
+                <tr key={index} className="border-b border-gray-700 last:border-b-0 hover:bg-gray-700/50 transition-colors">
+                  <td className={`p-3 font-semibold whitespace-nowrap ${getRiskColor(risk.level)}`}>
+                    <span className="mr-2">{getRiskIcon(risk.level)}</span>
+                    {risk.level}
+                  </td>
+                  <td className="p-3 text-white font-medium">{risk.title}</td>
+                  <td className="p-3 text-gray-300 text-sm">
+                    {/* We display only the first and most critical action */}
+                    {risk.actions[0].emoji} {risk.actions[0].text}
+                  </td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td colSpan="3" className="p-4 text-center text-gray-400">
+                  No immediate threats detected for your profile and location.
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }
