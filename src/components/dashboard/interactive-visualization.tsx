@@ -2,25 +2,60 @@
 
 import { useState, useEffect } from 'react';
 import {
-  Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle,
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
-import { Bar, BarChart, CartesianGrid, XAxis, YAxis, Line, LineChart } from 'recharts';
-import { getInteractiveDataInsights } from '@/app/actions';
-import { type InteractiveDataInsightsOutput } from '@/ai/flows/interactive-data-insights';
-import { Loader2, AlertTriangle, CheckCircle2 } from 'lucide-react';
+import {
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+} from '@/components/ui/chart';
+import { Bar, BarChart, CartesianGrid, XAxis, YAxis, Line, ComposedChart, Tooltip } from 'recharts';
+import { Loader2, AlertTriangle, ShieldCheck, Info, MapPin, TrendingUp, Phone } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+
+// --- Helper function to get the right color and icon for the risk level ---
+// This function is now safer and handles cases where riskLevel is not defined.
+const getRiskAppearance = (riskLevel) => {
+    const level = riskLevel || "Low"; // Use "Low" as a default if no risk level exists
+    switch (level.toLowerCase()) {
+        case 'high':
+            return { color: 'text-red-400', Icon: AlertTriangle };
+        case 'moderate':
+            return { color: 'text-orange-400', Icon: ShieldCheck };
+        default:
+            return { color: 'text-green-400', Icon: Info };
+    }
+};
+
+// --- MOCK CHART DATA ---
+const chartData = [
+  { month: 'Mar', cases: 237, temp: 30, rainfall: 5, risk: 'Low' },
+  { month: 'Apr', cases: 273, temp: 35, rainfall: 10, risk: 'Low' },
+  { month: 'May', cases: 209, temp: 38, rainfall: 20, risk: 'Moderate' },
+  { month: 'Jun', cases: 214, temp: 36, rainfall: 150, risk: 'Moderate' },
+  { month: 'Jul', cases: 310, temp: 32, rainfall: 300, risk: 'High' },
+  { month: 'Aug', cases: 420, temp: 31, rainfall: 350, risk: 'High' },
+];
+
+const getRiskColor = (risk) => {
+    if (risk === 'High') return 'hsl(var(--destructive))';
+    if (risk === 'Moderate') return 'hsl(var(--warning))';
+    return 'hsl(var(--success))';
+}
 
 export default function InteractiveVisualization() {
   const [loading, setLoading] = useState(false);
   const [query, setQuery] = useState('What are the current health trends?');
-  const [result, setResult] = useState<InteractiveDataInsightsOutput | null>(null);
-  const [chartData, setChartData] = useState([]);
+  const [result, setResult] = useState(null);
   const { toast } = useToast();
 
-  // Load cached data on mount
   useEffect(() => {
     const savedQuery = localStorage.getItem('interactiveQuery');
     const savedResult = localStorage.getItem('interactiveResult');
@@ -28,151 +63,112 @@ export default function InteractiveVisualization() {
     if (savedResult) setResult(JSON.parse(savedResult));
   }, []);
 
-  // Save to cache when updated
   useEffect(() => {
     localStorage.setItem('interactiveQuery', JSON.stringify(query));
-    if (result) localStorage.setItem('interactiveResult', JSON.stringify(result));
+    if (result) {
+      localStorage.setItem('interactiveResult', JSON.stringify(result));
+    }
   }, [query, result]);
 
   const handleQuery = async () => {
     if (!query) return;
     setLoading(true);
     setResult(null);
-
     try {
       const savedProfile = localStorage.getItem('userProfile');
       const profileData = savedProfile ? JSON.parse(savedProfile) : {};
 
-      const profileSummary = `
-        Location: ${profileData.currentDistrict || 'Not specified'},
-        Age: ${profileData.dob ? new Date().getFullYear() - new Date(profileData.dob).getFullYear() : 'Not specified'},
-        Sex: ${profileData.sex || 'Not specified'},
-        Conditions: ${profileData.chronicConditions || 'None'},
-        Allergies: ${profileData.allergies || 'None'}
-      `;
-
-      const res = await getInteractiveDataInsights({
-        profileData: profileSummary,
-        locationData: profileData.currentDistrict || 'Uttar Pradesh, India',
-        weatherData: '30°C, humid',
-        season: 'Monsoon',
-        localHealthData: 'Increase in vector-borne diseases',
-        governmentHealthData: 'High alert for dengue and malaria',
-        environmentRiskData: 'AQI 120, moderate',
-        query
+      const response = await fetch('/api/predictor', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ profileData, query }),
       });
 
-      setResult(res);
-      setChartData(res.chartData || []);
+      if (!response.ok) {
+          throw new Error('Failed to get analysis from the server.');
+      }
 
-      // Save risk history
-      const history = JSON.parse(localStorage.getItem('riskHistory') || '[]');
-      history.push({ date: new Date().toISOString(), risk: res.riskScore });
-      localStorage.setItem('riskHistory', JSON.stringify(history));
+      const res = await response.json();
+      setResult(res);
 
     } catch (error) {
-      toast({ variant: 'destructive', title: 'Error', description: 'Failed to generate insights.' });
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Failed to generate insights.',
+      });
       console.error(error);
     } finally {
       setLoading(false);
     }
   };
+  
+  // This line is now safe because getRiskAppearance handles undefined/null values
+  const { color, Icon } = getRiskAppearance(result?.riskLevel);
 
   return (
     <Card className="flex flex-col h-full">
       <CardHeader>
-        <CardTitle>Interactive Health Risk Dashboard</CardTitle>
-        <CardDescription>AI-powered local health trends, risks, and prevention steps.</CardDescription>
+        <CardTitle>Interactive Data Insights</CardTitle>
+        <CardDescription>
+          Ask a question to get a personalized, AI-powered risk assessment.
+        </CardDescription>
       </CardHeader>
-
       <CardContent className="flex-1 flex flex-col gap-4">
-        {/* Query Box */}
         <Textarea
-          placeholder="e.g., What is the malaria risk this week?"
+          placeholder="e.g., What is my risk for dengue this month?"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          className="min-h-[80px]"
+          className="min-h-[60px]"
         />
-
-        {/* Loading State */}
         {loading && (
           <div className="flex justify-center items-center p-4">
             <Loader2 className="h-6 w-6 animate-spin text-primary" />
-            <p className="ml-3">Analyzing health data...</p>
+            <p className="ml-3">Generating personalized insights...</p>
           </div>
         )}
-
-        {/* Result Section */}
         {result && (
           <div className="space-y-4">
-            {/* Risk Score & Level */}
-            <div className="flex items-center gap-4 p-3 rounded-lg border bg-muted">
-              <div className="relative w-16 h-16">
-                <svg className="w-full h-full">
-                  <circle cx="32" cy="32" r="28" stroke="#e5e7eb" strokeWidth="6" fill="none" />
-                  <circle
-                    cx="32" cy="32" r="28"
-                    stroke={result.riskLevel === 'High' ? '#f87171' : '#fbbf24'}
-                    strokeWidth="6"
-                    fill="none"
-                    strokeDasharray={`${(result.riskScore / 100) * 176} 176`}
-                    strokeLinecap="round"
-                    transform="rotate(-90 32 32)"
-                  />
-                </svg>
-                <span className="absolute inset-0 flex items-center justify-center font-bold text-lg">{result.riskScore}</span>
-              </div>
-              <div>
-                <p className="font-semibold">{result.riskLevel} Risk</p>
-                <p className="text-sm text-gray-500">{result.trend} trend | {result.timeFrame}</p>
-              </div>
-              {result.riskLevel === 'High' ? (
-                <AlertTriangle className="text-red-500 ml-auto" />
-              ) : (
-                <CheckCircle2 className="text-green-500 ml-auto" />
-              )}
+            {/* --- PERSONALIZED RISK SCORE --- */}
+            <div className="p-4 bg-gray-800/50 rounded-lg text-center">
+                <p className="text-sm text-gray-400">Your Personal Risk Score</p>
+                <p className={`text-4xl font-bold ${result.personalRiskScore > 70 ? 'text-red-500' : result.personalRiskScore > 40 ? 'text-orange-400' : 'text-green-400'}`}>
+                    {result.personalRiskScore}/100
+                </p>
+                <p className="text-xs text-gray-500">Based on your profile, location, and current conditions.</p>
             </div>
 
-            {/* Insight */}
-            <p className="text-sm font-medium">
-              <span className="font-semibold">Insight:</span> {result.insightSummary}
-            </p>
-
-            {/* Action Steps */}
-            <div className="p-3 rounded-lg border bg-muted">
-              <p className="font-semibold mb-2">Immediate Actions:</p>
-              <ul className="list-disc list-inside space-y-1 text-sm">
-                {result.immediateActions?.map((action: string, idx: number) => (
-                  <li key={idx}>{action}</li>
-                ))}
-              </ul>
+            {/* --- ACTION-ORIENTED INSIGHT --- */}
+            <div className="p-4 bg-gray-800/50 rounded-lg space-y-3">
+                <div className="flex justify-between text-xs font-medium text-gray-400">
+                    <span className="flex items-center gap-1"><MapPin size={12} /> {result.location}</span>
+                    <span className={`flex items-center gap-1 ${result.riskLevel === 'High' ? 'text-red-400' : 'text-orange-400'}`}><AlertTriangle size={12} /> Risk: {result.riskLevel}</span>
+                    <span className="flex items-center gap-1"><TrendingUp size={12} /> Trend: {result.trend}</span>
+                </div>
+                <p className="text-sm text-gray-300">{result.insight} <span className="font-semibold">{result.riskWindow}</span></p>
+                <div>
+                    <h4 className="font-semibold text-gray-200 text-sm mb-2">Immediate Actions:</h4>
+                    <ul className="space-y-1 text-xs text-gray-400">
+                        {result.actions.map((action, i) => (
+                            <li key={i} className="flex items-start gap-2"><span>•</span>{action}</li>
+                        ))}
+                    </ul>
+                </div>
             </div>
 
-            {/* Chart */}
-            <ChartContainer className="h-[200px] w-full">
-              <BarChart data={chartData}>
-                <CartesianGrid vertical={false} />
-                <XAxis dataKey="month" tickLine={false} axisLine={false} tickMargin={10} />
-                <YAxis />
-                <ChartTooltip cursor={false} content={<ChartTooltipContent indicator="dot" />} />
-                <Bar dataKey="cases" fill={result.riskLevel === 'High' ? '#f87171' : '#60a5fa'} radius={4} />
-              </BarChart>
-            </ChartContainer>
-
-            {/* Quick Actions */}
-            <div className="flex gap-2">
-              <Button variant="secondary" onClick={() => window.open('/fogging-schedule')}>Mosquito Fogging Near Me</Button>
-              <Button variant="outline" onClick={() => alert('Alerts enabled!')}>Set Weekly Alerts</Button>
-            </div>
-          </div>
-        )}
-      </CardContent>
-
-      <CardFooter>
-        <Button onClick={handleQuery} disabled={loading || !query} className="w-full">
-          {loading ? (<><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Analyzing...</>) : 'Get Insights'}
-        </Button>
-      </CardFooter>
-    </Card>
-  );
-}
+            {/* --- INFORMATIVE VISUALIZATION --- */}
+            <div className="p-4 bg-gray-800/50 rounded-lg">
+                <h4 className="font-semibold text-gray-200 text-sm mb-2">Seasonal Trend & Environmental Factors</h4>
+                 <ChartContainer config={{}} className="h-[200px] w-full">
+                    <ComposedChart data={chartData}>
+                        <CartesianGrid vertical={false} strokeDasharray="3 3" strokeOpacity={0.3}/>
+                        <XAxis dataKey="month" tickLine={false} axisLine={false} tickMargin={10} fontSize={12} />
+                        <YAxis yAxisId="left" orientation="left" stroke="#888888" fontSize={12} />
+                        <YAxis yAxisId="right" orientation="right" stroke="#888888" fontSize={12} />
+                        <Tooltip content={<ChartTooltipContent />} />
+                        <Bar yAxisId="left" dataKey="cases" name="Cases" radius={4}>
+                            {chartData.map((entry, index) => (
+                                <div key={`cell-${index}`} fill={getRiskColor(entry.risk)} />
+                            ))}
+                        </Bar>
+                        <Line yAxisId="right" type="monotone" dataKey="temp" name="Temp (°C)" stroke="hsl(var(--warning))" strokeWidth={2} dot={fal
