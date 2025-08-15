@@ -157,4 +157,38 @@ export default function InteractiveVisualization() {
             </div>
 
             {/* --- INFORMATIVE VISUALIZATION --- */}
-            <div className="p-4 bg-g
+            <div className="p-4 bg-gray-800/50 rounded-lg">
+                <h4 className="font-semibold text-gray-200 text-sm mb-2">Seasonal Trend & Environmental Factors</h4>
+                 <ChartContainer config={{}} className="h-[200px] w-full">
+                    <ComposedChart data={chartData}>
+                        <CartesianGrid vertical={false} strokeDasharray="3 3" strokeOpacity={0.3}/>
+                        <XAxis dataKey="month" tickLine={false} axisLine={false} tickMargin={10} fontSize={12} />
+                        <YAxis yAxisId="left" orientation="left" stroke="#888888" fontSize={12} />
+                        <YAxis yAxisId="right" orientation="right" stroke="#888888" fontSize={12} />
+                        <Tooltip content={<ChartTooltipContent />} />
+                        <Bar yAxisId="left" dataKey="cases" name="Cases" radius={4}>
+                            {chartData.map((entry, index) => (
+                                <rect key={`cell-${index}`} fill={getRiskColor(entry.risk)} />
+                            ))}
+                        </Bar>
+                        <Line yAxisId="right" type="monotone" dataKey="temp" name="Temp (°C)" stroke="hsl(var(--warning))" strokeWidth={2} dot={false} />
+                    </ComposedChart>
+                </ChartContainer>
+            </div>
+            
+            {/* --- LOCAL RESOURCES --- */}
+            <div className="grid grid-cols-2 gap-2 text-xs">
+                <Button variant="outline" size="sm" className="w-full">Find Nearest Fever Clinic</Button>
+                <Button variant="outline" size="sm" className="w-full flex items-center gap-1"><Phone size={12}/> Emergency Helpline: 108</Button>
+            </div>
+          </div>
+        )}
+      </CardContent>
+      <CardFooter>
+        <Button onClick={handleQuery} disabled={loading || !query} className="w-full">
+          {loading ? 'Analyzing...' : 'Get Personalized Insights'}
+        </Button>
+      </CardFooter>
+    </Card>
+  );
+}
