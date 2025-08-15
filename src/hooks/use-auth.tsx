@@ -1,4 +1,3 @@
-
 'use client';
 
 import {
@@ -32,25 +31,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (typeof window === 'undefined') return; // ✅ Run only in browser
+
     const processRedirect = async () => {
-        try {
-            const result = await getRedirectResult(auth);
-            if (result) {
-                // User is available in result.user
-                // This will be handled by onAuthStateChanged, but we can stop loading here.
-            }
-        } catch (error) {
-            console.error("Error getting redirect result", error);
-        } finally {
-            // This part is tricky because onAuthStateChanged will also fire.
-            // We rely on onAuthStateChanged to set the final loading state.
-        }
+      try {
+        await getRedirectResult(auth);
+      } catch (error) {
+        console.error('Error getting redirect result', error);
+      }
     };
-    
+
     processRedirect();
 
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setUser(user);
+    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+      setUser(firebaseUser);
       setLoading(false);
     });
 
@@ -58,11 +52,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const signInWithGoogle = async () => {
+    if (typeof window === 'undefined') return; // ✅ Run only in browser
     const provider = new GoogleAuthProvider();
     setLoading(true);
     try {
       await signInWithRedirect(auth, provider);
-      // After redirect, the page will reload, and the useEffect above will handle the result.
     } catch (error) {
       console.error('Error signing in with Google', error);
       setLoading(false);
@@ -70,6 +64,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signOut = async () => {
+    if (typeof window === 'undefined') return; // ✅ Run only in browser
     try {
       await firebaseSignOut(auth);
     } catch (error) {
@@ -86,7 +81,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
 export function useAuth() {
   const context = useContext(AuthContext);
-  if (context === undefined) {
+  if (!context) {
     throw new Error('useAuth must be used within an AuthProvider');
   }
   return context;
