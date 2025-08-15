@@ -62,6 +62,10 @@
     "zod": "^3.24.2"
   },
   "devDependencies": {
+     "next": "14.0.0",
+  "@opentelemetry/exporter-jaeger": "^0.51.0",
+  "@genkit-ai/firebase": "^0.1.0"
+}
     "@types/node": "^20",
     "@types/react": "^18",
     "@types/react-dom": "^18",
