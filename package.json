@@ -12,6 +12,10 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "next": "14.0.0",
+  "@opentelemetry/exporter-jaeger": "^0.51.0",
+  "@genkit-ai/firebase": "^0.1.0"
+}
     "@genkit-ai/googleai": "^1.14.1",
     "@genkit-ai/next": "^1.14.1",
     "genkitx-openai": "*",
