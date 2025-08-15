@@ -1,5 +1,5 @@
 import PageHeader from '@/components/page-header';
-import RiskSummary from '@/components/dashboard/risk-summary';
+import LiveRiskRadar from '@/components/LiveRiskRadar';
 import InteractiveVisualization from '@/components/dashboard/interactive-visualization';
 import DiseaseTrendChart from '@/components/dashboard/disease-trend-chart';
 
@@ -9,7 +9,7 @@ export default function DashboardPage() {
       <PageHeader title="Dashboard" />
       <div className="grid gap-6 lg:grid-cols-2 xl:grid-cols-3">
         <div className="xl:col-span-2">
-          <RiskSummary />
+         <LiveRiskRadar />
         </div>
         <div className="lg:col-span-2 xl:col-span-1">
           <InteractiveVisualization />
