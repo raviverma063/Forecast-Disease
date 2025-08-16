@@ -1,103 +1,55 @@
 from flask import Flask, request, jsonify
+import datetime
 
 app = Flask(__name__)
 
-# --- DATA SOURCES (Simulated for Demonstration) ---
-# This data now has specific alerts for different districts
-outbreakData = {
-  "Default": [
-    {
-      "level": "Immediate", "title": "Dengue Fever Spike", "whyLabel": "Why Urgent",
-      "whyText": "Dengue cases in your locality are rising with the season.",
-      "actionLabel": "Action — Do This Today",
-      "actions": [{"emoji": "🦟", "text": "Apply mosquito repellent (DEET 20%) morning + evening."}]
+# --- MEDICAL KNOWLEDGE BASE ---
+# This section simulates a database of detailed medical information.
+disease_protocols = {
+    "Dengue Fever Spike": {
+        "physiology": "Dengue is a viral infection transmitted by the Aedes mosquito. The virus replicates in the bloodstream, leading to symptoms like high fever, severe headache, muscle/joint pains, and a characteristic skin rash. In severe cases, it can cause plasma leakage, leading to shock.",
+        "pathology": "The primary pathology involves thrombocytopenia (low platelet count) and hemoconcentration (increased blood thickness), which can lead to Dengue Hemorrhagic Fever (DHF) or Dengue Shock Syndrome (DSS) if not managed.",
+        "management_protocol_goi": "As per the National Vector Borne Disease Control Programme (NVBDCP), management is primarily supportive. Key protocols include: 1) Adequate hydration (oral rehydration salts/IV fluids). 2) Paracetamol for fever (Aspirin/NSAIDs are contraindicated). 3) Close monitoring of platelet count and hematocrit. 4) Hospitalization for any warning signs (e.g., persistent vomiting, severe abdominal pain, bleeding).",
+        "preventive_measures": "Focus on mosquito control: eliminate standing water, use mosquito nets and repellents (DEET), and wear protective clothing."
     },
-    {
-      "level": "High", "title": "Seasonal Influenza Surge", "whyLabel": "Why Important",
-      "whyText": "Rain + humidity is increasing flu virus spread across the region.",
-      "actionLabel": "Action This Week",
-      "actions": [{"emoji": "😷", "text": "Wear mask in crowded indoor areas."}]
+    "Seasonal Influenza Surge": {
+        "physiology": "Influenza is a respiratory virus that infects the nose, throat, and lungs. It causes inflammation of the upper respiratory tract, leading to fever, cough, sore throat, body aches, and fatigue.",
+        "pathology": "The virus damages respiratory epithelial cells. In severe cases, it can lead to viral pneumonia or secondary bacterial pneumonia. High-risk groups (elderly, young children, those with chronic conditions) are more susceptible to complications.",
+        "management_protocol_goi": "The Ministry of Health and Family Welfare guidelines recommend: 1) Symptomatic treatment with antipyretics. 2) Antiviral drugs like Oseltamivir for severe cases or high-risk patients. 3) Emphasis on annual flu vaccination for prevention. 4) Home isolation to prevent spread.",
+        "preventive_measures": "Annual vaccination is the most effective prevention. Practice good hand hygiene and wear masks in crowded areas during peak season."
     },
-    {
-      "level": "Moderate", "title": "Acute Gastroenteritis", "whyLabel": "Why Notable",
-      "whyText": "Risk of waterborne diarrhea increases during this season.",
-      "actionLabel": "Action in Next 48 hrs",
-      "actions": [{"emoji": "💧", "text": "Drink only boiled/RO water."}]
+    "Acute Gastroenteritis": {
+        "physiology": "Caused by viruses (like Rotavirus) or bacteria, it leads to inflammation of the stomach and intestines. This impairs water and electrolyte absorption, causing diarrhea and vomiting.",
+        "pathology": "The main pathological concern is dehydration and electrolyte imbalance, which can be life-threatening, especially in children and the elderly. The specific pathogen determines the severity and potential for complications.",
+        "management_protocol_goi": "The Integrated Disease Surveillance Programme (IDSP) focuses on: 1) Oral Rehydration Therapy (ORT) with Oral Rehydration Solution (ORS) as the cornerstone of treatment. 2) Zinc supplementation for children to reduce the duration and severity of diarrhea. 3) Promoting handwashing and safe drinking water to prevent outbreaks.",
+        "preventive_measures": "Drink boiled or purified water, wash hands thoroughly before eating, and avoid consuming street food, especially during monsoon season."
     }
-  ],
-  "Kanpur Nagar": [
-    {
-      "level": "Immediate", "title": "Dengue Fever Spike", "whyLabel": "Why Urgent",
-      "whyText": "Dengue cases in Kanpur Nagar ↑ 42% this week.",
-      "actionLabel": "Action — Do This Today",
-      "actions": [{"emoji": "🦟", "text": "Apply mosquito repellent (DEET 20%) morning + evening."}]
-    },
-    {
-      "level": "High", "title": "Seasonal Influenza Surge", "whyLabel": "Why Important",
-      "whyText": "Local OPD cases up 27% in past week in Kanpur.",
-      "actionLabel": "Action This Week",
-      "actions": [{"emoji": "😷", "text": "Wear mask in crowded indoor areas."}]
-    },
-    {
-      "level": "Moderate", "title": "Acute Gastroenteritis", "whyLabel": "Why Notable",
-      "whyText": "Multiple waterborne diarrhea cases reported from nearby wards.",
-      "actionLabel": "Action in Next 48 hrs",
-      "actions": [{"emoji": "💧", "text": "Drink only boiled/RO water."}]
-    }
-  ],
-  "Lucknow": [
-     {
-      "level": "Immediate", "title": "Viral Conjunctivitis (Eye Flu) Outbreak", "whyLabel": "Why Urgent",
-      "whyText": "A significant surge in Eye Flu cases has been reported across Lucknow.",
-      "actionLabel": "Action — Do This Today",
-      "actions": [{"emoji": "👁️", "text": "Avoid touching your eyes. Wash hands frequently."}]
-    },
-    {
-      "level": "High", "title": "Typhoid Fever Advisory", "whyLabel": "Why Important",
-      "whyText": "Contaminated water sources have led to an increase in Typhoid cases.",
-      "actionLabel": "Action This Week",
-      "actions": [{"emoji": "💧", "text": "Ensure all drinking water is boiled or from a reliable purifier."}]
-    }
-  ],
-  "Agra": [
-    {
-      "level": "High", "title": "Heatstroke Advisory", "whyLabel": "Why Important",
-      "whyText": "Extreme temperatures above 42°C are forecasted.",
-      "actionLabel": "Action This Week",
-      "actions": [{"emoji": "💧", "text": "Drink plenty of water, even if not thirsty."}]
-    },
-    {
-      "level": "Moderate", "title": "Foodborne Illness Alert", "whyLabel": "Why Notable",
-      "whyText": "An increase in food poisoning cases has been linked to street vendors.",
-      "actionLabel": "Action in Next 48 hrs",
-      "actions": [{"emoji": "🥗", "text": "Avoid raw or undercooked street food."}]
-    }
-  ],
-  "Varanasi": [
-    {
-      "level": "High", "title": "Cholera & Waterborne Disease Warning", "whyLabel": "Why Important",
-      "whyText": "Recent flooding has increased the risk of water contamination.",
-      "actionLabel": "Action This Week",
-      "actions": [{"emoji": "💧", "text": "Drink and use only boiled or bottled water."}]
-    },
-     {
-      "level": "Moderate", "title": "Leptospirosis Risk", "whyLabel": "Why Notable",
-      "whyText": "Contact with contaminated water or soil can lead to Leptospirosis.",
-      "actionLabel": "Action in Next 48 hrs",
-      "actions": [{"emoji": "👢", "text": "Wear waterproof boots if you must walk through waterlogged areas."}]
-    }
-  ]
 }
 
-def generate_live_disease_radar(user_profile):
-    # Get the district from the user's profile, or use "Default" if it's not there
-    district = user_profile.get("currentDistrict", "Default")
+def get_personalized_risk_analysis(profile, query):
+    """
+    Analyzes a user's query to provide detailed information about a specific disease.
+    """
+    lower_query = query.lower()
     
-    # Return the alerts for that specific district
-    return outbreakData.get(district, outbreakData["Default"])
+    disease_name = "Dengue Fever Spike" # Default disease
+
+    if 'flu' in lower_query or 'influenza' in lower_query:
+        disease_name = "Seasonal Influenza Surge"
+    elif 'gastro' in lower_query or 'diarrhea' in lower_query or 'stomach' in lower_query:
+        disease_name = "Acute Gastroenteritis"
+
+    # Get the detailed information for the identified disease
+    analysis = disease_protocols.get(disease_name, {})
+    analysis["diseaseName"] = disease_name
+    
+    return analysis
+
 
 @app.route('/api/predictor', methods=['POST'])
 def predictor_api():
-    user_profile = request.json
-    alerts = generate_live_disease_radar(user_profile)
-    return jsonify(alerts)
+    data = request.json
+    profile_data = data.get('profileData', {})
+    query = data.get('query', '')
+    analysis = get_personalized_risk_analysis(profile_data, query)
+    return jsonify(analysis)
