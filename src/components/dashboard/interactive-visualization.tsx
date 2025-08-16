@@ -1,3 +1,8 @@
+/* IMPORTANT: This code is for your WEBSITE'S DISPLAY. 
+  It belongs in the following file on GitHub:
+  src/components/dashboard/interactive-visualization.tsx
+*/
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -42,6 +47,7 @@ export default function InteractiveVisualization() {
       const savedProfile = localStorage.getItem('userProfile');
       const profileData = savedProfile ? JSON.parse(savedProfile) : {};
 
+      // This now correctly points to the detailed information API
       const response = await fetch('/api/predictor', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -67,7 +73,6 @@ export default function InteractiveVisualization() {
     }
   };
   
-  // This function will render the results only when they exist
   const renderResult = () => {
     if (!result) return null;
 
