@@ -1,55 +1,96 @@
-import React, { useState } from "react";
+'use client'; // This line fixes the error.
 
-const HospitalLocator = () => {
-  const [latitude, setLatitude] = useState(null);
-  const [longitude, setLongitude] = useState(null);
-  const [error, setError] = useState("");
+import React, { useState } from 'react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Loader2, Hospital, Map, Star, Clock } from 'lucide-react';
+
+export default function HospitalLocator() {
+  const [hospitals, setHospitals] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
   const findHospitals = () => {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          setLatitude(position.coords.latitude);
-          setLongitude(position.coords.longitude);
-          setError("");
-        },
-        () => {
-          setError("Unable to retrieve your location. Please enable location services.");
-        }
-      );
-    } else {
+    if (!navigator.geolocation) {
       setError("Geolocation is not supported by your browser.");
+      return;
     }
+
+    setLoading(true);
+    setError(null);
+    setHospitals([]);
+
+    // 1. Get the user's current GPS coordinates
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        const { latitude, longitude } = position.coords;
+
+        try {
+          // 2. Call our Python API with the user's location
+          const response = await fetch(`/api/hospital_finder?lat=${latitude}&lng=${longitude}`);
+          if (!response.ok) {
+            throw new Error('Failed to fetch nearby hospitals.');
+          }
+          const data = await response.json();
+          setHospitals(data);
+        } catch (err) {
+          setError(err.message);
+        } finally {
+          setLoading(false);
+        }
+      },
+      () => {
+        setError("Unable to retrieve your location. Please enable location services.");
+        setLoading(false);
+      }
+    );
   };
 
   return (
-    <div className="text-center mt-6">
-      {error && <p className="text-red-500">{error}</p>}
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Hospital className="text-primary" />
+          Nearby Hospital Locator
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        {error && <p className="text-red-500 text-sm mb-4">{error}</p>}
+        
+        <Button onClick={findHospitals} disabled={loading} className="w-full">
+          {loading ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Finding Hospitals...
+            </>
+          ) : (
+            'Find Nearby Hospitals'
+          )}
+        </Button>
 
-      <button
-        onClick={findHospitals}
-        className="px-4 py-2 bg-blue-500 text-white rounded-lg shadow-md hover:bg-blue-600"
-      >
-        📍 Find Nearby Hospitals
-      </button>
-
-      {latitude && longitude && (
-        <div className="mt-4">
-          <button
-            onClick={() =>
-              window.open(
-                `https://www.google.com/maps/search/hospitals/@${latitude},${longitude},14z`,
-                "_blank"
-              )
-            }
-            className="px-4 py-2 bg-green-500 text-white rounded-lg shadow-md hover:bg-green-600"
-          >
-            🏥 Connect to Google Maps
-          </button>
+        <div className="mt-4 space-y-3">
+          {hospitals.map((hospital, index) => (
+            <div key={index} className="p-3 bg-gray-800/50 rounded-lg">
+              <h3 className="font-semibold text-white">{hospital.name}</h3>
+              <p className="text-xs text-gray-400 mt-1">{hospital.address}</p>
+              <div className="flex items-center justify-between mt-2 text-xs text-gray-300">
+                <div className="flex items-center gap-4">
+                    <span className="flex items-center gap-1"><Star size={12} className="text-yellow-400"/> {hospital.rating}</span>
+                    <span className={`flex items-center gap-1 font-medium ${hospital.is_open === 'Open' ? 'text-green-400' : 'text-red-400'}`}><Clock size={12}/> {hospital.is_open}</span>
+                </div>
+                <a 
+                  href={hospital.maps_url} 
+                  target="_blank" 
+                  rel="noopener noreferrer" 
+                  className="flex items-center gap-1 text-blue-400 hover:underline"
+                >
+                  <Map size={12}/> Directions
+                </a>
+              </div>
+            </div>
+          ))}
         </div>
-      )}
-    </div>
+      </CardContent>
+    </Card>
   );
-};
-
-export default HospitalLocator;
+}
