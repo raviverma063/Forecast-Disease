@@ -7,41 +7,51 @@ app = Flask(__name__)
 @app.route('/api/hospital_finder', methods=['GET'])
 def hospital_finder_api():
     # --- 1. Get User's Location from the Request ---
-    # The website will send the user's latitude and longitude
     lat = request.args.get('lat')
     lng = request.args.get('lng')
 
     if not lat or not lng:
         return jsonify({"error": "Latitude and longitude are required."}), 400
 
+    # Convert to float and validate
+    try:
+        lat = float(lat)
+        lng = float(lng)
+    except ValueError:
+        return jsonify({"error": "Invalid latitude or longitude format."}), 400
+
     # --- 2. Get the Secure API Key from Vercel's Settings ---
-    # We use os.environ.get to safely access the key you will set up
     api_key = os.environ.get('GOOGLE_MAPS_API_KEY')
     if not api_key:
         return jsonify({"error": "Google Maps API key is not configured."}), 500
 
     # --- 3. Construct the Google Places API Request ---
-    radius = 5000  # Search within a 5km radius
+    radius = 5000
     url = f"https://maps.googleapis.com/maps/api/place/nearbysearch/json?location={lat},{lng}&radius={radius}&type=hospital&key={api_key}"
 
     try:
-        # --- 4. Call the Google API and Get the Results ---
         response = requests.get(url)
-        response.raise_for_status()  # Raise an exception for bad responses (4xx or 5xx)
+        response.raise_for_status()
         data = response.json()
 
-        # --- 5. Format the Results for Our Website ---
         hospitals = []
         for place in data.get('results', []):
-            is_open = place.get('opening_hours', {}).get('open_now', 'N/A')
+            open_now = place.get('opening_hours', {}).get('open_now')
+            if open_now == True:
+                open_status = 'Open'
+            elif open_now == False:
+                open_status = 'Closed'
+            else:
+                open_status = 'Hours not available'
+
             hospitals.append({
                 'name': place.get('name'),
                 'address': place.get('vicinity'),
                 'rating': place.get('rating', 'N/A'),
-                'is_open': 'Open' if is_open else 'Closed' if is_open is not 'N/A' else 'Hours not available',
+                'is_open': open_status,
                 'maps_url': f"https://www.google.com/maps/search/?api=1&query={place.get('name')}&query_place_id={place.get('place_id')}"
             })
-        
+
         return jsonify(hospitals)
 
     except requests.exceptions.RequestException as e:
@@ -50,4 +60,3 @@ def hospital_finder_api():
     except Exception as e:
         print(f"An unexpected error occurred: {e}")
         return jsonify({"error": "An internal server error occurred."}), 500
-
