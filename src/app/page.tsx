@@ -1,3 +1,4 @@
+'use client';
 import { useEffect } from 'react';
 import PageHeader from '@/components/page-header';
 import LiveRiskRadar from '@/components/LiveRiskRadar';
