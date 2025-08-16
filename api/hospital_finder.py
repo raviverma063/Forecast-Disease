@@ -1,92 +1,57 @@
-'use client';
+from flask import Flask, request, jsonify
+import os
+import requests
 
-import React, { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input'; // We'll need an input field
-import { Loader2, Hospital, Map, Star, Clock } from 'lucide-react';
+app = Flask(__name__)
 
-export default function HospitalLocator() {
-  const [hospitals, setHospitals] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
-  const [locationQuery, setLocationQuery] = useState('Kanpur'); // Default search location
+@app.route('/api/hospital_finder', methods=['GET'])
+def hospital_finder_api():
+    # This API is now smart enough to handle GPS coordinates OR a text query.
+    lat = request.args.get('lat')
+    lng = request.args.get('lng')
+    query = request.args.get('query')
 
-  const findHospitals = async () => {
-    if (!locationQuery) {
-      setError("Please enter a city or address.");
-      return;
-    }
+    api_key = os.environ.get('GOOGLE_MAPS_API_KEY')
+    if not api_key:
+        return jsonify({"error": "Google Maps API key is not configured."}), 500
 
-    setLoading(true);
-    setError(null);
-    setHospitals([]);
+    # --- Logic to decide which Google API to use ---
+    if lat and lng:
+        # If we have GPS coordinates, use the precise "Nearby Search"
+        url = f"https://maps.googleapis.com/maps/api/place/nearbysearch/json?location={lat},{lng}&radius=5000&type=hospital&key={api_key}"
+    elif query:
+        # If we have a text query (like a district name), use "Text Search"
+        url = f"https://maps.googleapis.com/maps/api/place/textsearch/json?query=hospitals in {query}&key={api_key}"
+    else:
+        return jsonify({"error": "Location data (GPS or query) is required."}), 400
 
-    try {
-      // Call our Python API with the user's typed location
-      const response = await fetch(`/api/hospital_finder?query=${encodeURIComponent(locationQuery)}`);
-      if (!response.ok) {
-        throw new Error('Failed to fetch nearby hospitals.');
-      }
-      const data = await response.json();
-      setHospitals(data);
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
+    try:
+        response = requests.get(url)
+        response.raise_for_status()
+        data = response.json()
 
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Hospital className="text-primary" />
-          Hospital Locator
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="flex gap-2 mb-4">
-          <Input 
-            type="text"
-            value={locationQuery}
-            onChange={(e) => setLocationQuery(e.target.value)}
-            placeholder="Enter city or address..."
-          />
-          <Button onClick={findHospitals} disabled={loading}>
-            {loading ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              'Search'
-            )}
-          </Button>
-        </div>
+        hospitals = []
+        for place in data.get('results', []):
+            is_open_data = place.get('opening_hours', {}).get('open_now')
+            is_open_status = 'N/A'
+            if is_open_data is True:
+                is_open_status = 'Open'
+            elif is_open_data is False:
+                is_open_status = 'Closed'
 
-        {error && <p className="text-red-500 text-sm mb-4">{error}</p>}
+            hospitals.append({
+                'name': place.get('name'),
+                'address': place.get('vicinity') or place.get('formatted_address'),
+                'rating': place.get('rating', 'N/A'),
+                'is_open': is_open_status,
+                'maps_url': f"https://www.google.com/maps/search/?api=1&query={place.get('name')}&query_place_id={place.get('place_id')}"
+            })
+        
+        return jsonify(hospitals)
 
-        <div className="mt-4 space-y-3">
-          {hospitals.map((hospital, index) => (
-            <div key={index} className="p-3 bg-gray-800/50 rounded-lg">
-              <h3 className="font-semibold text-white">{hospital.name}</h3>
-              <p className="text-xs text-gray-400 mt-1">{hospital.address}</p>
-              <div className="flex items-center justify-between mt-2 text-xs text-gray-300">
-                <div className="flex items-center gap-4">
-                    <span className="flex items-center gap-1"><Star size={12} className="text-yellow-400"/> {hospital.rating}</span>
-                    <span className={`flex items-center gap-1 font-medium ${hospital.is_open === 'Open' ? 'text-green-400' : 'text-red-400'}`}><Clock size={12}/> {hospital.is_open}</span>
-                </div>
-                <a 
-                  href={hospital.maps_url} 
-                  target="_blank" 
-                  rel="noopener noreferrer" 
-                  className="flex items-center gap-1 text-blue-400 hover:underline"
-                >
-                  <Map size={12}/> Directions
-                </a>
-              </div>
-            </div>
-          ))}
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
+    except requests.exceptions.RequestException as e:
+        print(f"Error calling Google Places API: {e}")
+        return jsonify({"error": "Failed to fetch data from Google Maps."}), 502
+    except Exception as e:
+        print(f"An unexpected error occurred: {e}")
+        return jsonify({"error": "An internal server error occurred."}), 500
