@@ -3,38 +3,76 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input'; // We'll need an input field
 import { Loader2, Hospital, Map, Star, Clock } from 'lucide-react';
 
 export default function HospitalLocator() {
   const [hospitals, setHospitals] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [locationQuery, setLocationQuery] = useState('Kanpur'); // Default search location
 
-  const findHospitals = async () => {
-    if (!locationQuery) {
-      setError("Please enter a city or address.");
-      return;
-    }
-
+  const findHospitals = () => {
     setLoading(true);
     setError(null);
     setHospitals([]);
 
-    try {
-      // Call our Python API with the user's typed location
-      const response = await fetch(`/api/hospital_finder?query=${encodeURIComponent(locationQuery)}`);
-      if (!response.ok) {
-        throw new Error('Failed to fetch nearby hospitals.');
-      }
-      const data = await response.json();
-      setHospitals(data);
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
+    // --- STRATEGY 1: Try to get live GPS location first ---
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          // GPS Success: Fetch hospitals using coordinates
+          const { latitude, longitude } = position.coords;
+          fetchHospitalsByGps(latitude, longitude);
+        },
+        () => {
+          // GPS Failed: Fall back to using the profile data
+          console.log("GPS failed, falling back to profile.");
+          fetchHospitalsByProfile();
+        }
+      );
+    } else {
+      // Geolocation not supported: Go straight to profile data
+      console.log("Geolocation not supported, falling back to profile.");
+      fetchHospitalsByProfile();
     }
+  };
+  
+  const fetchHospitalsByGps = async (lat, lng) => {
+     try {
+        const response = await fetch(`/api/hospital_finder?lat=${lat}&lng=${lng}`);
+        if (!response.ok) throw new Error('Failed to fetch hospitals via GPS.');
+        const data = await response.json();
+        setHospitals(data);
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+  };
+
+  const fetchHospitalsByProfile = async () => {
+    // --- STRATEGY 2: Use the saved profile district ---
+    const savedProfile = localStorage.getItem('userProfile');
+    if (savedProfile) {
+      const profileData = JSON.parse(savedProfile);
+      const district = profileData.currentDistrict;
+      if (district) {
+         try {
+            const response = await fetch(`/api/hospital_finder?query=${encodeURIComponent(district)}`);
+            if (!response.ok) throw new Error('Failed to fetch hospitals using profile.');
+            const data = await response.json();
+            setHospitals(data);
+          } catch (err) {
+            setError(err.message);
+          } finally {
+            setLoading(false);
+          }
+          return;
+      }
+    }
+
+    // --- FINAL FALLBACK ---
+    setError("Could not find location. Please set your district in your profile.");
+    setLoading(false);
   };
 
   return (
@@ -42,27 +80,22 @@ export default function HospitalLocator() {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Hospital className="text-primary" />
-          Hospital Locator
+          Nearby Hospital Locator
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="flex gap-2 mb-4">
-          <Input 
-            type="text"
-            value={locationQuery}
-            onChange={(e) => setLocationQuery(e.target.value)}
-            placeholder="Enter city or address..."
-          />
-          <Button onClick={findHospitals} disabled={loading}>
-            {loading ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              'Search'
-            )}
-          </Button>
-        </div>
+        <Button onClick={findHospitals} disabled={loading} className="w-full">
+          {loading ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Finding Hospitals Near You...
+            </>
+          ) : (
+            'Find Hospitals Near Me'
+          )}
+        </Button>
 
-        {error && <p className="text-red-500 text-sm mb-4">{error}</p>}
+        {error && <p className="text-red-500 text-sm mt-4 text-center">{error}</p>}
 
         <div className="mt-4 space-y-3">
           {hospitals.map((hospital, index) => (
