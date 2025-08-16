@@ -1,59 +1,96 @@
-from flask import Flask, request, jsonify
-import os
-import requests
+'use client';
 
-app = Flask(__name__)
+import React, { useState } from 'react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Loader2, Hospital, Map, Star, Clock } from 'lucide-react';
 
-@app.route('/api/hospital_finder', methods=['GET'])
-def hospital_finder_api():
-    """
-    Fetches nearby hospitals using the user's current location.
-    """
-    # --- 1. Get User's Location from the Request ---
-    lat = request.args.get('lat')
-    lng = request.args.get('lng')
+export default function HospitalLocator() {
+  const [hospitals, setHospitals] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
-    if not lat or not lng:
-        return jsonify({"error": "Latitude and longitude are required."}), 400
+  const findHospitals = () => {
+    if (!navigator.geolocation) {
+      setError("Geolocation is not supported by your browser.");
+      return;
+    }
 
-    # --- 2. Get the Secure API Key from Vercel's Settings ---
-    api_key = os.environ.get('GOOGLE_MAPS_API_KEY')
-    if not api_key:
-        return jsonify({"error": "Google Maps API key is not configured."}), 500
+    setLoading(true);
+    setError(null);
+    setHospitals([]);
 
-    # --- 3. Construct the Google Places API Request ---
-    radius = 5000  # Search within a 5km radius
-    url = f"https://maps.googleapis.com/maps/api/place/nearbysearch/json?location={lat},{lng}&radius={radius}&type=hospital&key={api_key}"
+    // 1. Get the user's current GPS coordinates
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        const { latitude, longitude } = position.coords;
 
-    try:
-        # --- 4. Call the Google API and Get the Results ---
-        response = requests.get(url)
-        response.raise_for_status()
-        data = response.json()
+        try {
+          // 2. Call our Python API with the user's location
+          const response = await fetch(`/api/hospital_finder?lat=${latitude}&lng=${longitude}`);
+          if (!response.ok) {
+            throw new Error('Failed to fetch nearby hospitals.');
+          }
+          const data = await response.json();
+          setHospitals(data);
+        } catch (err) {
+          setError(err.message);
+        } finally {
+          setLoading(false);
+        }
+      },
+      () => {
+        setError("Unable to retrieve your location. Please enable location services.");
+        setLoading(false);
+      }
+    );
+  };
 
-        # --- 5. Format the Results for Our Website ---
-        hospitals = []
-        for place in data.get('results', []):
-            is_open_data = place.get('opening_hours', {}).get('open_now')
-            is_open_status = 'N/A'
-            if is_open_data is True:
-                is_open_status = 'Open'
-            elif is_open_data is False:
-                is_open_status = 'Closed'
-
-            hospitals.append({
-                'name': place.get('name'),
-                'address': place.get('vicinity'),
-                'rating': place.get('rating', 'N/A'),
-                'is_open': is_open_status,
-                'maps_url': f"https://www.google.com/maps/search/?api=1&query={place.get('name')}&query_place_id={place.get('place_id')}"
-            })
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Hospital className="text-primary" />
+          Nearby Hospital Locator
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        {error && <p className="text-red-500 text-sm mb-4">{error}</p>}
         
-        return jsonify(hospitals)
+        <Button onClick={findHospitals} disabled={loading} className="w-full">
+          {loading ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Finding Hospitals...
+            </>
+          ) : (
+            'Find Nearby Hospitals'
+          )}
+        </Button>
 
-    except requests.exceptions.RequestException as e:
-        print(f"Error calling Google Places API: {e}")
-        return jsonify({"error": "Failed to fetch data from Google Maps."}), 502
-    except Exception as e:
-        print(f"An unexpected error occurred: {e}")
-        return jsonify({"error": "An internal server error occurred."}), 500
+        <div className="mt-4 space-y-3">
+          {hospitals.map((hospital, index) => (
+            <div key={index} className="p-3 bg-gray-800/50 rounded-lg">
+              <h3 className="font-semibold text-white">{hospital.name}</h3>
+              <p className="text-xs text-gray-400 mt-1">{hospital.address}</p>
+              <div className="flex items-center justify-between mt-2 text-xs text-gray-300">
+                <div className="flex items-center gap-4">
+                    <span className="flex items-center gap-1"><Star size={12} className="text-yellow-400"/> {hospital.rating}</span>
+                    <span className={`flex items-center gap-1 font-medium ${hospital.is_open === 'Open' ? 'text-green-400' : 'text-red-400'}`}><Clock size={12}/> {hospital.is_open}</span>
+                </div>
+                <a 
+                  href={hospital.maps_url} 
+                  target="_blank" 
+                  rel="noopener noreferrer" 
+                  className="flex items-center gap-1 text-blue-400 hover:underline"
+                >
+                  <Map size={12}/> Directions
+                </a>
+              </div>
+            </div>
+          ))}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
