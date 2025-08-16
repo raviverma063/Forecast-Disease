@@ -3,16 +3,18 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input'; // We'll need an input field
 import { Loader2, Hospital, Map, Star, Clock } from 'lucide-react';
 
 export default function HospitalLocator() {
   const [hospitals, setHospitals] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [locationQuery, setLocationQuery] = useState('Kanpur'); // Default search location
 
-  const findHospitals = () => {
-    if (!navigator.geolocation) {
-      setError("Geolocation is not supported by your browser.");
+  const findHospitals = async () => {
+    if (!locationQuery) {
+      setError("Please enter a city or address.");
       return;
     }
 
@@ -20,30 +22,19 @@ export default function HospitalLocator() {
     setError(null);
     setHospitals([]);
 
-    // 1. Get the user's current GPS coordinates
-    navigator.geolocation.getCurrentPosition(
-      async (position) => {
-        const { latitude, longitude } = position.coords;
-
-        try {
-          // 2. Call our Python API with the user's location
-          const response = await fetch(`/api/hospital_finder?lat=${latitude}&lng=${longitude}`);
-          if (!response.ok) {
-            throw new Error('Failed to fetch nearby hospitals.');
-          }
-          const data = await response.json();
-          setHospitals(data);
-        } catch (err) {
-          setError(err.message);
-        } finally {
-          setLoading(false);
-        }
-      },
-      () => {
-        setError("Unable to retrieve your location. Please enable location services.");
-        setLoading(false);
+    try {
+      // Call our Python API with the user's typed location
+      const response = await fetch(`/api/hospital_finder?query=${encodeURIComponent(locationQuery)}`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch nearby hospitals.');
       }
-    );
+      const data = await response.json();
+      setHospitals(data);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -51,22 +42,27 @@ export default function HospitalLocator() {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Hospital className="text-primary" />
-          Nearby Hospital Locator
+          Hospital Locator
         </CardTitle>
       </CardHeader>
       <CardContent>
+        <div className="flex gap-2 mb-4">
+          <Input 
+            type="text"
+            value={locationQuery}
+            onChange={(e) => setLocationQuery(e.target.value)}
+            placeholder="Enter city or address..."
+          />
+          <Button onClick={findHospitals} disabled={loading}>
+            {loading ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              'Search'
+            )}
+          </Button>
+        </div>
+
         {error && <p className="text-red-500 text-sm mb-4">{error}</p>}
-        
-        <Button onClick={findHospitals} disabled={loading} className="w-full">
-          {loading ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Finding Hospitals...
-            </>
-          ) : (
-            'Find Nearby Hospitals'
-          )}
-        </Button>
 
         <div className="mt-4 space-y-3">
           {hospitals.map((hospital, index) => (
