@@ -1,69 +1,131 @@
-'use server';
+'use client';
 
-/**
- * @fileOverview This file defines a Genkit flow for generating interactive data insights related to health trends and risks.
- *
- * @exports interactiveDataInsights - A function that takes user data and generates interactive data insights.
- * @exports InteractiveDataInsightsInput - The input type for the interactiveDataInsights function.
- * @exports InteractiveDataInsightsOutput - The output type for the interactiveDataInsights function.
- */
+import { useState, useEffect } from 'react';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
+import { Loader2, BookOpen, HeartPulse, ShieldCheck, Stethoscope } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
-import {ai} from '@/ai/genkit';
-import {z} from 'genkit';
+export default function InteractiveVisualization() {
+  const [loading, setLoading] = useState(false);
+  const [query, setQuery] = useState('Tell me about Dengue Fever');
+  const [result, setResult] = useState(null);
+  const { toast } = useToast();
 
-const InteractiveDataInsightsInputSchema = z.object({
-  profileData: z.string().describe('User profile data including demographics and health history.'),
-  locationData: z.string().describe('Current location data including GPS coordinates.'),
-  weatherData: z.string().describe('Current weather data for the user location.'),
-  season: z.string().describe('Current season of the year.'),
-  localHealthData: z.string().describe('Local health data for the last week.'),
-  governmentHealthData: z.string().describe('Government public health data including outbreak and disease data.'),
-  environmentRiskData: z.string().describe('Environment and vector risk data including air quality and major potential crops.'),
-  query: z.string().describe('Specific question or request from the user regarding health trends and risks.'),
-});
+  useEffect(() => {
+    const savedQuery = localStorage.getItem('interactiveQuery');
+    const savedResult = localStorage.getItem('interactiveResult');
+    if (savedQuery) setQuery(JSON.parse(savedQuery));
+    if (savedResult) setResult(JSON.parse(savedResult));
+  }, []);
 
-export type InteractiveDataInsightsInput = z.infer<typeof InteractiveDataInsightsInputSchema>;
+  useEffect(() => {
+    localStorage.setItem('interactiveQuery', JSON.stringify(query));
+    if (result) {
+      localStorage.setItem('interactiveResult', JSON.stringify(result));
+    }
+  }, [query, result]);
 
-const InteractiveDataInsightsOutputSchema = z.object({
-  insight: z.string().describe('Generated interactive data insight based on the input data and user query.'),
-  visualizationSuggestion: z.string().describe('Suggestion for visualizing the insight in an interactive chart or graph format.'),
-});
+  const handleQuery = async () => {
+    if (!query) return;
+    setLoading(true);
+    setResult(null);
+    try {
+      const savedProfile = localStorage.getItem('userProfile');
+      const profileData = savedProfile ? JSON.parse(savedProfile) : {};
 
-export type InteractiveDataInsightsOutput = z.infer<typeof InteractiveDataInsightsOutputSchema>;
+      // This now correctly points to the detailed information API
+      const response = await fetch('/api/predictor', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ profileData, query }),
+      });
 
-export async function interactiveDataInsights(input: InteractiveDataInsightsInput): Promise<InteractiveDataInsightsOutput> {
-  return interactiveDataInsightsFlow(input);
+      if (!response.ok) {
+          throw new Error('Failed to get analysis from the server.');
+      }
+
+      const res = await response.json();
+      setResult(res);
+
+    } catch (error) {
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Failed to generate insights.',
+      });
+      console.error(error);
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  const renderResult = () => {
+    if (!result) return null;
+
+    return (
+      <div className="space-y-4 text-sm">
+        <h3 className="text-xl font-bold text-white">{result.diseaseName}</h3>
+        
+        <div className="p-4 bg-gray-800/50 rounded-lg">
+            <h4 className="font-semibold text-gray-200 mb-2 flex items-center gap-2"><Stethoscope size={16} /> Physiology</h4>
+            <p className="text-gray-400 pl-6">{result.physiology}</p>
+        </div>
+
+        <div className="p-4 bg-gray-800/50 rounded-lg">
+            <h4 className="font-semibold text-gray-200 mb-2 flex items-center gap-2"><HeartPulse size={16} /> Pathology</h4>
+            <p className="text-gray-400 pl-6">{result.pathology}</p>
+        </div>
+
+        <div className="p-4 bg-gray-800/50 rounded-lg">
+            <h4 className="font-semibold text-gray-200 mb-2 flex items-center gap-2"><ShieldCheck size={16} /> Preventive Measures</h4>
+            <p className="text-gray-400 pl-6">{result.preventive_measures}</p>
+        </div>
+
+        <div className="p-4 bg-gray-800/50 rounded-lg border-l-4 border-blue-500">
+            <h4 className="font-semibold text-gray-200 mb-2 flex items-center gap-2"><BookOpen size={16} /> Management Protocol (Govt. of India)</h4>
+            <p className="text-gray-400 pl-6">{result.management_protocol_goi}</p>
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <Card className="flex flex-col h-full">
+      <CardHeader>
+        <CardTitle>Disease Information Hub</CardTitle>
+        <CardDescription>
+          Ask about a disease to get details on its physiology, pathology, and official management protocols.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="flex-1 flex flex-col gap-4">
+        <Textarea
+          placeholder="e.g., Tell me about Influenza"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          className="min-h-[60px]"
+        />
+        {loading && (
+          <div className="flex justify-center items-center p-4">
+            <Loader2 className="h-6 w-6 animate-spin text-primary" />
+            <p className="ml-3">Fetching information...</p>
+          </div>
+        )}
+        {renderResult()}
+      </CardContent>
+      <CardFooter>
+        <Button onClick={handleQuery} disabled={loading || !query} className="w-full">
+          {loading ? 'Fetching...' : 'Get Information'}
+        </Button>
+      </CardFooter>
+    </Card>
+  );
 }
-
-const prompt = ai.definePrompt({
-  name: 'interactiveDataInsightsPrompt',
-  input: {schema: InteractiveDataInsightsInputSchema},
-  output: {schema: InteractiveDataInsightsOutputSchema},
-  prompt: `You are an AI assistant that generates interactive data insights related to health trends and risks.
-
-  Based on the following data and the user's query, generate an insightful response and suggest a suitable visualization method.
-
-  User Profile Data: {{{profileData}}}
-  Location Data: {{{locationData}}}
-  Weather Data: {{{weatherData}}}
-  Season: {{{season}}}
-  Local Health Data: {{{localHealthData}}}
-  Government Health Data: {{{governmentHealthData}}}
-  Environment Risk Data: {{{environmentRiskData}}}
-  User Query: {{{query}}}
-
-  Insight:
-  Visualization Suggestion:`,
-});
-
-const interactiveDataInsightsFlow = ai.defineFlow(
-  {
-    name: 'interactiveDataInsightsFlow',
-    inputSchema: InteractiveDataInsightsInputSchema,
-    outputSchema: InteractiveDataInsightsOutputSchema,
-  },
-  async input => {
-    const {output} = await prompt(input);
-    return output!;
-  }
-);
