@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Loader2, Hospital, Map, Star, Clock } from 'lucide-react';
@@ -75,6 +75,13 @@ export default function HospitalLocator() {
     setLoading(false);
   };
 
+  // --- AUTO-UPDATE FEATURE ---
+  // This useEffect hook will run once when the component first loads,
+  // automatically triggering the hospital search.
+  useEffect(() => {
+    findHospitals();
+  }, []); // The empty array ensures this only runs on the initial render
+
   return (
     <Card>
       <CardHeader>
@@ -91,7 +98,7 @@ export default function HospitalLocator() {
               Finding Hospitals Near You...
             </>
           ) : (
-            'Find Hospitals Near Me'
+            'Refresh Location'
           )}
         </Button>
 
