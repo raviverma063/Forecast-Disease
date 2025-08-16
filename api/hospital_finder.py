@@ -1,3 +1,4 @@
+"use client";
 import React, { useState } from "react";
 
 // Main component for the hospital locator application
