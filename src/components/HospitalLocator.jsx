@@ -23,14 +23,26 @@ export default function HospitalLocator() {
     } else {
       setError("Geolocation is not supported by your browser.");
     }
-  };
-
+  }; 
+  
   return (
-    <div className="bg-[#0a0f1c] p-6 rounded-lg shadow-lg text-center">
-      <h2 className="text-xl font-bold text-blue-400 flex items-center justify-center gap-2">
-        🏥 Nearby Hospital Locator
-      </h2>
-      {error && <p className="text-red-500 mt-2">{error}</p>}
+  <div className="text-center mt-4">
+    {error && <p className="text-red-500">{error}</p>}
+
+    <button
+      onClick={() =>
+        window.open(
+          `https://www.google.com/maps/search/hospitals/@${latitude},${longitude},14z`,
+          "_blank"
+        )
+      }
+      className="px-4 py-2 bg-blue-500 text-white rounded-lg shadow-md hover:bg-blue-600"
+    >
+      🏥 Connect to Nearby Hospitals
+    </button>
+  </div>
+);
+
 
       <button
         onClick={findHospitals}
