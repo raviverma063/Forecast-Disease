@@ -1,6 +1,8 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { Button } from '@/components/ui/button';
+import { Loader2 } from 'lucide-react';
 
 // --- Data for Dropdowns ---
 const districts = [
@@ -41,7 +43,6 @@ const occupations = [
     "Teacher", "Technician", "Tour Guide", "Translator", "Veterinarian", "Waiter/Waitress",
     "Weaver", "Welder", "Writer", "Yoga Instructor", "Other"
 ];
-// --- ENLARGED HEALTH BLUEPRINT LISTS ---
 const diseases = [
     "None", "Common Cold", "Influenza (Flu)", "Pneumonia", "Bronchitis", "Strep Throat",
     "COVID-19", "Dengue", "Malaria", "Chikungunya", "Typhoid", "Cholera",
@@ -62,25 +63,16 @@ const allergies = [
     "Penicillin", "Aspirin", "Sulfa Drugs", "Latex", "Fragrances"
 ];
 
-// --- The Main Profile Component ---
 export default function PrecisionProfileBuilder() {
-  // State to hold all the form data
   const [profile, setProfile] = useState({
-    name: '',
-    dob: '',
-    sex: 'Male',
-    bloodGroup: 'A+',
-    nativeDistrict: 'Lucknow',
-    currentDistrict: 'Lucknow',
-    waterSource: 'Borewell',
-    housingType: 'Pucca',
-    primaryOccupation: 'Student',
-    currentDiseases: 'None',
-    chronicConditions: 'None',
-    allergies: 'None',
+    name: '', dob: '', sex: 'Male', bloodGroup: 'A+',
+    nativeDistrict: 'Lucknow', currentDistrict: 'Lucknow',
+    waterSource: 'Borewell', housingType: 'Pucca',
+    primaryOccupation: 'Student', currentDiseases: 'None',
+    chronicConditions: 'None', allergies: 'None',
   });
+  const [locationLoading, setLocationLoading] = useState(false);
 
-  // --- Load data from cache when the page opens ---
   useEffect(() => {
     const savedProfile = localStorage.getItem('userProfile');
     if (savedProfile) {
@@ -88,89 +80,127 @@ export default function PrecisionProfileBuilder() {
     }
   }, []);
 
-  // --- Handle changes in any input field ---
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setProfile(prevProfile => ({
-      ...prevProfile,
-      [name]: value,
-    }));
+    setProfile(prev => ({ ...prev, [name]: value }));
   };
 
-  // --- Save the current data to the device's cache ---
   const handleSaveProfile = () => {
     localStorage.setItem('userProfile', JSON.stringify(profile));
-    alert('Profile Saved!'); // You can replace this with a more subtle notification
+    alert('Profile Saved!');
   };
 
-  // --- Helper to create a dropdown menu ---
+  // --- NEW: Function to get location via GPS ---
+  const handleGetLocation = () => {
+    if (!navigator.geolocation) {
+        alert("Geolocation is not supported by your browser.");
+        return;
+    }
+    setLocationLoading(true);
+    navigator.geolocation.getCurrentPosition(async (position) => {
+        const { latitude, longitude } = position.coords;
+        // NOTE: You must have a GOOGLE_MAPS_API_KEY in your Vercel environment variables
+        // and the "Geocoding API" must be enabled in your Google Cloud project.
+        const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY; // Assumes key is exposed to client
+        if (!apiKey) {
+            alert("Google Maps API key is not configured for this site.");
+            setLocationLoading(false);
+            return;
+        }
+        
+        const url = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=${apiKey}`;
+        
+        try {
+            const response = await fetch(url);
+            const data = await response.json();
+            if (data.status === 'OK') {
+                // Find the administrative area level 2, which is usually the district in India
+                const districtComponent = data.results[0].address_components.find(
+                    (comp) => comp.types.includes("administrative_area_level_2")
+                );
+                if (districtComponent) {
+                    const districtName = districtComponent.long_name;
+                    // Check if the found district is in our list
+                    if (districts.includes(districtName)) {
+                        setProfile(prev => ({ ...prev, currentDistrict: districtName }));
+                    } else {
+                        alert(`Located district "${districtName}", which is not in the list of UP districts.`);
+                    }
+                } else {
+                    alert("Could not determine the district from your location.");
+                }
+            } else {
+                alert("Failed to get location details from Google Maps.");
+            }
+        } catch (error) {
+            console.error("Error fetching location details:", error);
+            alert("An error occurred while fetching location details.");
+        } finally {
+            setLocationLoading(false);
+        }
+    }, () => {
+        alert("Unable to retrieve your location. Please enable location services in your browser.");
+        setLocationLoading(false);
+    });
+  };
+
   const renderSelect = (name, label, options) => (
-    <div className="flex-1">
-      <label htmlFor={name} className="block text-sm font-medium text-gray-400 mb-1">
-        {label}
-      </label>
-      <select
-        id={name}
-        name={name}
-        value={profile[name]}
-        onChange={handleChange}
-        className="w-full p-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:ring-2 focus:ring-blue-500"
-      >
-        {options.map(option => (
-          <option key={option} value={option}>{option}</option>
-        ))}
+    <div>
+      <label htmlFor={name} className="block text-sm font-medium text-gray-400 mb-1">{label}</label>
+      <select id={name} name={name} value={profile[name]} onChange={handleChange} className="w-full p-2 bg-gray-700 border border-gray-600 rounded-md text-white">
+        {options.map(o => <option key={o} value={o}>{o}</option>)}
       </select>
     </div>
   );
 
   return (
-    <div className="bg-gray-900 text-white min-h-screen p-4 sm:p-8">
+    <div className="bg-gray-900 text-white min-h-screen p-8">
       <div className="max-w-4xl mx-auto">
         <header className="mb-8">
           <h1 className="text-3xl font-bold">Precision Profile Builder</h1>
-          <p className="text-gray-400 mt-1">
-            Every detail sharpens your protection. Your selections here will personalize all sections of the dashboard.
-          </p>
+          <p className="text-gray-400 mt-1">Every detail sharpens your protection.</p>
         </header>
 
         <div className="space-y-6">
-          {/* --- Core Identity Section --- */}
           <div className="bg-gray-800 p-6 rounded-lg">
-            <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">👤 Core Identity</h2>
+            <h2 className="text-xl font-semibold mb-4">👤 Core Identity</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label htmlFor="name" className="block text-sm font-medium text-gray-400 mb-1">Name</label>
-                <input type="text" id="name" name="name" value={profile.name} onChange={handleChange} placeholder="e.g., Rajesh Kumar" className="w-full p-2 bg-gray-700 border border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500" />
+                <input type="text" id="name" name="name" value={profile.name} onChange={handleChange} placeholder="e.g., Rajesh Kumar" className="w-full p-2 bg-gray-700 border border-gray-600 rounded-md" />
               </div>
               <div>
                 <label htmlFor="dob" className="block text-sm font-medium text-gray-400 mb-1">Date of Birth</label>
-                <input type="date" id="dob" name="dob" value={profile.dob} onChange={handleChange} className="w-full p-2 bg-gray-700 border border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500" />
+                <input type="date" id="dob" name="dob" value={profile.dob} onChange={handleChange} className="w-full p-2 bg-gray-700 border border-gray-600 rounded-md" />
               </div>
               {renderSelect('sex', 'Sex', ['Male', 'Female', 'Other'])}
               {renderSelect('bloodGroup', 'Blood Group', bloodGroups)}
             </div>
           </div>
 
-          {/* --- District DNA Section --- */}
           <div className="bg-gray-800 p-6 rounded-lg">
-            <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">🌍 District DNA</h2>
+            <h2 className="text-xl font-semibold mb-4">🌍 District DNA</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {renderSelect('nativeDistrict', 'Native District', districts)}
-              {renderSelect('currentDistrict', 'Current District', districts)}
+              <div>
+                {renderSelect('currentDistrict', 'Current District', districts)}
+                <Button onClick={handleGetLocation} disabled={locationLoading} className="w-full mt-2 text-xs">
+                  {locationLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                  Get Current Location via GPS
+                </Button>
+              </div>
               {renderSelect('waterSource', 'Water Source', waterSources)}
               {renderSelect('housingType', 'Housing Type', housingTypes)}
             </div>
           </div>
 
-          {/* --- Occupational Health Section --- */}
           <div className="bg-gray-800 p-6 rounded-lg">
-            <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">💼 Occupational Health</h2>
+            <h2 className="text-xl font-semibold mb-4">💼 Occupational Health</h2>
             {renderSelect('primaryOccupation', 'Primary Occupation', occupations)}
           </div>
 
-          {/* --- Health Blueprint Section --- */}
           <div className="bg-gray-800 p-6 rounded-lg">
-            <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">❤️ Health Blueprint</h2>
+            <h2 className="text-xl font-semibold mb-4">❤️ Health Blueprint</h2>
             <div className="space-y-4">
               {renderSelect('currentDiseases', 'Current or Recent Diseases', diseases)}
               {renderSelect('chronicConditions', 'Chronic Conditions', chronicConditions)}
@@ -179,12 +209,9 @@ export default function PrecisionProfileBuilder() {
           </div>
 
           <div className="flex justify-start">
-            <button
-              onClick={handleSaveProfile}
-              className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-md transition-colors"
-            >
+            <Button onClick={handleSaveProfile} className="px-6 py-2 bg-blue-600 hover:bg-blue-700">
               Save Profile
-            </button>
+            </Button>
           </div>
         </div>
       </div>
