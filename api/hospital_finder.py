@@ -33,12 +33,11 @@ def hospital_finder_api():
         hospitals = []
         for place in data.get('results', []):
             is_open_data = place.get('opening_hours', {}).get('open_now')
-            is_open_status = 'N/A'
-            if is_open_data is True:
-                is_open_status = 'Open'
-            elif is_open_data is False:
-                is_open_status = 'Closed'
-
+            is_open_status = 'Hours not available' # Default to this
+         if is_open_data is True:
+            is_open_status = 'Open'
+         elif is_open_data is False:
+         is_open_status = 'Closed'
             hospitals.append({
                 'name': place.get('name'),
                 'address': place.get('vicinity') or place.get('formatted_address'),
