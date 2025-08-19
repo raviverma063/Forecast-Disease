@@ -16,8 +16,6 @@ import {
   X,
   Bot,
 } from 'lucide-react';
-// Assuming SidebarProvider is a component you have, update the import path if needed
-// import { SidebarProvider } from '@/contexts/SidebarContext'; 
 
 // --- Navigation Links Configuration ---
 const navItems = [
@@ -48,14 +46,10 @@ function NavLink({ href, label, icon: Icon }) {
 }
 
 // --- Main Layout Component ---
-// Mock SidebarProvider for demonstration. Replace with your actual provider.
-import { SidebarProvider } from '@/contexts/SidebarContext'; // This path is an example
-
 export default function DashboardLayout({ children }) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   return (
-    <SidebarProvider>
       <div className="grid min-h-screen w-full md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr]">
         {/* --- Desktop Sidebar --- */}
         <div className="hidden border-r bg-gray-900/40 md:block">
@@ -119,6 +113,5 @@ export default function DashboardLayout({ children }) {
           </main>
         </div>
       </div>
-    </SidebarProvider>
   );
 }
