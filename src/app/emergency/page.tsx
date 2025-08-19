@@ -1,15 +1,14 @@
-'use client'; // Required because this page now uses an interactive client component
+'use client';
 
+import { useState } from 'react';
+import Link from 'next/link';
 import PageHeader from '../../components/page-header';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
-import { Ambulance, Hospital, Phone } from 'lucide-react';
-import { useState } from "react";
-import { DndProvider, useDrag, useDrop } from "react-dnd";
-import { HTML5Backend } from "react-dnd-html5-backend";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
+import { Ambulance, Hospital, Phone, ShieldQuestion } from 'lucide-react';
 
-// --- Data and Components for the First Aid Section ---
-
+// --- Data for the First Aid Section ---
 const emergencies = [
   {
     id: "cuts",
@@ -80,78 +79,54 @@ const emergencies = [
   },
 ];
 
-function EmergencyItem({ emergency }) {
-  const [{ isDragging }, drag] = useDrag(() => ({
-    type: "EMERGENCY",
-    item: emergency,
-    collect: (monitor) => ({ isDragging: !!monitor.isDragging() }),
-  }));
+// --- New Component using a Dropdown Menu ---
+function EmergencySelector() {
+  const [selectedId, setSelectedId] = useState('');
+  const selectedEmergency = emergencies.find(e => e.id === selectedId);
 
   return (
-    <div
-      ref={drag}
-      className={`p-3 m-2 rounded-xl cursor-move shadow-md bg-gray-800 text-white hover:bg-gray-700 transition ${isDragging ? "opacity-50" : ""}`}
-    >
-      {emergency.name}
-    </div>
-  );
-}
-
-function HelpBox({ onDrop, selected }) {
-  const [{ isOver }, drop] = useDrop(() => ({
-    accept: "EMERGENCY",
-    drop: (item) => onDrop(item),
-    collect: (monitor) => ({ isOver: !!monitor.isOver() }),
-  }));
-
-  return (
-    <Card ref={drop} className={`p-4 min-h-[200px] border-2 ${isOver ? "border-blue-500" : "border-gray-600"}`}>
+    <Card>
       <CardHeader>
-        <CardTitle>🆘 Drag Emergency Here</CardTitle>
+        <div className="flex items-center gap-3">
+            <ShieldQuestion className="h-8 w-8 text-yellow-400" />
+            <CardTitle>First Aid Instructions</CardTitle>
+        </div>
+        <CardDescription>Select an emergency to see the recommended first aid steps.</CardDescription>
       </CardHeader>
-      <CardContent>
-        {selected ? (
-          <div>
-            <h2 className="text-xl font-bold mb-2">{selected.name}</h2>
-            <ol className="list-decimal pl-5 space-y-1 text-sm">
-              {selected.steps.map((step, idx) => (
+      <CardContent className="space-y-4">
+        <Select onValueChange={setSelectedId} value={selectedId}>
+          <SelectTrigger>
+            <SelectValue placeholder="Select an emergency..." />
+          </SelectTrigger>
+          <SelectContent>
+            {emergencies.map(emergency => (
+              <SelectItem key={emergency.id} value={emergency.id}>
+                {emergency.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        {selectedEmergency && (
+          <div className="pt-4 border-t border-gray-700">
+            <h3 className="text-xl font-bold mb-3 text-white">{selectedEmergency.name}</h3>
+            <ol className="list-decimal pl-5 space-y-2 text-sm text-gray-300">
+              {selectedEmergency.steps.map((step, idx) => (
                 <li key={idx}>{step}</li>
               ))}
             </ol>
-            <p className="mt-3 text-red-400 font-semibold">Govt Protocol: {selected.govt}</p>
+            <p className="mt-4 text-red-400 font-semibold text-xs">
+                <strong>Govt Protocol:</strong> {selectedEmergency.govt}
+            </p>
           </div>
-        ) : (
-          <p className="text-gray-400">Drop an emergency to see first aid steps.</p>
         )}
       </CardContent>
     </Card>
   );
 }
 
-function EmergencyDragDrop() {
-  const [selected, setSelected] = useState(null);
-
-  return (
-    <DndProvider backend={HTML5Backend}>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <Card className="p-4 bg-gray-900">
-          <CardHeader>
-            <CardTitle className="text-white">🚨 Select Emergency</CardTitle>
-          </CardHeader>
-          <CardContent className="flex flex-wrap">
-            {emergencies.map((e) => (
-              <EmergencyItem key={e.id} emergency={e} />
-            ))}
-          </CardContent>
-        </Card>
-        <HelpBox onDrop={setSelected} selected={selected} />
-      </div>
-    </DndProvider>
-  );
-}
 
 // --- Main Emergency Page Component ---
-
 const emergencyContacts = [
   { name: 'National Emergency Number', number: '112' },
   { name: 'Police', number: '100' },
@@ -162,7 +137,9 @@ export default function EmergencyPage() {
   return (
     <div className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6">
       <PageHeader title="My Emergency" />
+      
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Call Ambulance Card */}
         <Card className="flex flex-col">
           <CardHeader>
             <div className="flex items-center gap-3">
@@ -182,6 +159,7 @@ export default function EmergencyPage() {
           </CardContent>
         </Card>
         
+        {/* Nearby Hospitals Card */}
         <Card>
           <CardHeader>
             <div className="flex items-center gap-3">
@@ -189,14 +167,14 @@ export default function EmergencyPage() {
                 <CardTitle>Nearby Hospitals (24/7)</CardTitle>
             </div>
             <CardDescription>
-              Find the nearest 24/7 medical facilities.
+              Find the nearest 24/7 medical facilities in your community.
             </CardDescription>
           </CardHeader>
           <CardContent className="flex items-center justify-center">
             <Button asChild size="lg" className="w-full md:w-auto">
-                <a href="https://www.google.com/maps/search/hospital+near+me" target="_blank" rel="noopener noreferrer">
-                    <Hospital className="mr-2 h-5 w-5" /> Find Hospitals
-                </a>
+                <Link href="/community">
+                    <Hospital className="mr-2 h-5 w-5" /> View Community Hub
+                </Link>
             </Button>
           </CardContent>
         </Card>
@@ -204,9 +182,10 @@ export default function EmergencyPage() {
 
       {/* --- This is the new, interactive First Aid section --- */}
       <div className="mt-6">
-        <EmergencyDragDrop />
+        <EmergencySelector />
       </div>
 
+      {/* Other Emergency Contacts Card */}
       <Card className="mt-6">
           <CardHeader>
               <CardTitle>Other Emergency Contacts</CardTitle>
