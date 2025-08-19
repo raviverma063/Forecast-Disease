@@ -1,8 +1,8 @@
 'use client'; // Required because this page now uses an interactive client component
 
-import PageHeader from '../components/page-header';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
-import { Button } from '../components/ui/button';
+import PageHeader from '../../components/page-header';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
+import { Button } from '../../components/ui/button';
 import { Ambulance, Hospital, Phone } from 'lucide-react';
 import { useState } from "react";
 import { DndProvider, useDrag, useDrop } from "react-dnd";
