@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
-import { Hospital, MapPin, Loader2, BookOpen, HeartPulse, ShieldCheck, Stethoscope } from 'lucide-react';
+import { Hospital, MapPin, Loader2, BookOpen, HeartPulse, ShieldCheck, Stethoscope, Siren } from 'lucide-react';
 
 //================================================================//
 //  1. Interactive Visualization Component (Disease Info Hub)     //
@@ -15,7 +15,6 @@ function InteractiveVisualization() {
   const [query, setQuery] = useState('Tell me about Dengue Fever');
   const [result, setResult] = useState(null);
 
-  // Effect to load saved data from localStorage on initial render
   useEffect(() => {
     const savedQuery = localStorage.getItem('interactiveQuery');
     const savedResult = localStorage.getItem('interactiveResult');
@@ -35,7 +34,6 @@ function InteractiveVisualization() {
     }
   }, []);
 
-  // Effect to save data to localStorage whenever query or result changes
   useEffect(() => {
     try {
         localStorage.setItem('interactiveQuery', JSON.stringify(query));
@@ -55,7 +53,6 @@ function InteractiveVisualization() {
       const savedProfile = localStorage.getItem('userProfile');
       const profileData = savedProfile ? JSON.parse(savedProfile) : {};
 
-      // API call to your backend predictor
       const response = await fetch('/api/predictor', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -178,6 +175,26 @@ export default function DashboardPage() {
               </CardHeader>
               <CardContent>
                 <MockLineChart />
+              </CardContent>
+            </Card>
+
+            {/* NEW Emergency Assistance Card */}
+            <Card>
+              <CardHeader>
+                <div className="flex items-center gap-3">
+                  <Siren className="h-6 w-6 text-destructive" />
+                  <CardTitle>Emergency Assistance</CardTitle>
+                </div>
+                <CardDescription>
+                  Access first aid guides and critical contact numbers immediately.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="flex items-center justify-center">
+                <Button asChild size="lg" className="w-full md:w-1/2" variant="destructive">
+                    <Link href="/emergency">
+                        Go to Emergency Section
+                    </Link>
+                </Button>
               </CardContent>
             </Card>
 
