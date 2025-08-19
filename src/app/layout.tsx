@@ -49,7 +49,7 @@ function NavLink({ href, label, icon: Icon }) {
 
 // --- Main Layout Component ---
 // Mock SidebarProvider for demonstration. Replace with your actual provider.
-const SidebarProvider = ({ children }) => <>{children}</>;
+import { SidebarProvider } from '@/contexts/SidebarContext'; // This path is an example
 
 export default function DashboardLayout({ children }) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
