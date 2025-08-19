@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useState } from 'react';
+import { useState, createContext, useContext } from 'react'; // Import context hooks
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import {
@@ -17,7 +17,21 @@ import {
   Bot,
 } from 'lucide-react';
 
-// --- Navigation Links Configuration ---
+// --- 1. CREATE A SIDEBAR CONTEXT ---
+// This creates a placeholder context. If you have a real SidebarProvider,
+// import it and delete this section.
+const SidebarContext = createContext(null);
+export const useSidebar = () => useContext(SidebarContext);
+export const SidebarProvider = ({ children }) => {
+  // Add any state or functions your sidebar needs here
+  const value = { isSidebarOpen: false }; // Example value
+  return (
+    <SidebarContext.Provider value={value}>{children}</SidebarContext.Provider>
+  );
+};
+
+
+// --- 2. NAVIGATION LINKS CONFIGURATION ---
 const navItems = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/travel-insights', label: 'Travel Insights', icon: Map },
@@ -45,11 +59,13 @@ function NavLink({ href, label, icon: Icon }) {
   );
 }
 
-// --- Main Layout Component ---
+// --- 3. MAIN LAYOUT COMPONENT ---
 export default function DashboardLayout({ children }) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   return (
+    // Wrap the entire layout with the SidebarProvider
+    <SidebarProvider>
       <div className="grid min-h-screen w-full md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr]">
         {/* --- Desktop Sidebar --- */}
         <div className="hidden border-r bg-gray-900/40 md:block">
@@ -113,5 +129,6 @@ export default function DashboardLayout({ children }) {
           </main>
         </div>
       </div>
+    </SidebarProvider>
   );
 }
