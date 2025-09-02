@@ -1,28 +1,21 @@
-'use client';
+"use client";
+import { createContext, useContext, useState } from "react";
 
-import { useSidebar } from '../context/SidebarContext';
+// Create context
+const SidebarContext = createContext();
 
-export default function Sidebar() {
-  const { isOpen, toggleSidebar } = useSidebar();
+// Provider
+export function SidebarProvider({ children }) {
+  const [isOpen, setIsOpen] = useState(false);
 
   return (
-    <>
-      <button onClick={toggleSidebar} className="sidebar-toggle">
-        {isOpen ? '✕' : '☰'}
-      </button>
-      <div className={`sidebar ${isOpen ? 'open' : ''}`}>
-        <h2>Navigation</h2>
-        <nav>
-          <ul>
-            <li><a href="#">Dashboard</a></li>
-            <li><a href="#">Projects</a></li>
-            <li><a href="#">Calendar</a></li>
-            <li><a href="#">Documents</a></li>
-            <li><a href="#">Reports</a></li>
-          </ul>
-        </nav>
-      </div>
-      {isOpen && <div className="sidebar-overlay" onClick={toggleSidebar} />}
-    </>
+    <SidebarContext.Provider value={{ isOpen, setIsOpen }}>
+      {children}
+    </SidebarContext.Provider>
   );
+}
+
+// Hook
+export function useSidebar() {
+  return useContext(SidebarContext);
 }
