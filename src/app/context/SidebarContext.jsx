@@ -1,26 +1,23 @@
 'use client';
 
-import { createContext, useContext, useState } from 'react';
+import { createContext, useContext } from 'react';
 
-// Create the context
+// 1. Create the context
 const SidebarContext = createContext(null);
 
-// Create a custom hook to use the context easily
+// 2. Create a custom hook for easy access to the context
 export const useSidebar = () => {
     const context = useContext(SidebarContext);
     if (context === null) {
-        // This error will now be much clearer if you forget the provider!
         throw new Error('useSidebar must be used within a SidebarProvider.');
     }
     return context;
 };
 
-// Create the Provider component
+// 3. Create the Provider component that will wrap your application
 export const SidebarProvider = ({ children }) => {
-    // You can add real state here if needed, for example:
-    // const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-    // const value = { isSidebarOpen, setIsSidebarOpen };
-    const value = { isSidebarOpen: false }; // Keeping your example value
+    // You can add real state here in the future if needed
+    const value = { isSidebarOpen: false }; // Example value from your layout
 
     return (
         <SidebarContext.Provider value={value}>
@@ -28,3 +25,4 @@ export const SidebarProvider = ({ children }) => {
         </SidebarContext.Provider>
     );
 };
+
