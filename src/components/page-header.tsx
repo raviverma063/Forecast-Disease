@@ -1,4 +1,4 @@
-import { SidebarTrigger } from '@/components/ui/sidebar';
+import { SideMenuButton } from '@/components/ui/sidebar'; // Or whatever the real name is
 
 type PageHeaderProps = {
   title: string;
