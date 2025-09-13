@@ -3,9 +3,8 @@
 import type { Metadata } from "next";
 import "./globals.css";
 
-// STEP 1: Import the SidebarProvider. 
-// IMPORTANT: You may need to adjust this path to match your project's file structure.
-import { SidebarProvider } from './sidebar'; 
+// This is the line we just fixed with the correct path
+import { SidebarProvider } from '@/components/ui/sidebar'; 
 
 export const metadata: Metadata = {
   title: "Create Next App",
@@ -29,7 +28,6 @@ export default function RootLayout({
         />
       </head>
       <body>
-        {/* STEP 2: Wrap your children with the provider */}
         <SidebarProvider>{children}</SidebarProvider>
       </body>
     </html>
