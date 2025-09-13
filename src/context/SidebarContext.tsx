@@ -1,11 +1,17 @@
 "use client";
-import { createContext, useContext, useState } from "react";
+import { createContext, useContext, useState, ReactNode } from "react";
 
-// Create context
-const SidebarContext = createContext();
+// Define the context type
+interface SidebarContextType {
+  isOpen: boolean;
+  setIsOpen: (isOpen: boolean) => void;
+}
+
+// Create context with proper typing
+const SidebarContext = createContext<SidebarContextType | undefined>(undefined);
 
 // Provider
-export function SidebarProvider({ children }) {
+export function SidebarProvider({ children }: { children: ReactNode }) {
   const [isOpen, setIsOpen] = useState(false);
 
   return (
@@ -17,5 +23,9 @@ export function SidebarProvider({ children }) {
 
 // Hook
 export function useSidebar() {
-  return useContext(SidebarContext);
+  const context = useContext(SidebarContext);
+  if (context === undefined) {
+    throw new Error("useSidebar must be used within a SidebarProvider");
+  }
+  return context;
 }
