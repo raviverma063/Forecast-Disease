@@ -25,7 +25,7 @@ const navItems = [
   { href: '/dashboard/profile', label: 'Profile', icon: User },
 ];
 
-function NavLink({ href, label, icon: Icon }) {
+function NavLink({ href, label, icon: Icon }: { href: string; label: string; icon: React.ElementType }) {
   const pathname = usePathname();
   const isActive = pathname === href;
 
@@ -42,16 +42,12 @@ function NavLink({ href, label, icon: Icon }) {
   );
 }
 
-export default function DashboardLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   return (
     <div className="grid min-h-screen w-full md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr]">
-      {/* --- Sidebar (desktop) --- */}
+      {/* Sidebar (desktop) */}
       <div className="hidden border-r bg-gray-900/40 md:block">
         <div className="flex h-full flex-col">
           <div className="flex h-14 items-center border-b px-4 lg:h-[60px] lg:px-6">
@@ -70,7 +66,7 @@ export default function DashboardLayout({
         </div>
       </div>
 
-      {/* --- Content + mobile header --- */}
+      {/* Content + mobile header */}
       <div className="flex flex-col">
         <header className="flex h-14 items-center gap-4 border-b bg-gray-900/40 px-4 lg:h-[60px] lg:px-6 md:hidden">
           {/* Mobile nav toggle */}
@@ -81,7 +77,10 @@ export default function DashboardLayout({
                 <span className="sr-only">Toggle navigation</span>
               </Button>
             </SheetTrigger>
-            <SheetContent side="left" className="flex flex-col bg-gray-900 text-white border-r-gray-800">
+            <SheetContent
+              side="left"
+              className="flex flex-col bg-gray-900 text-white border-r-gray-800"
+            >
               <nav className="grid gap-2 text-lg font-medium">
                 <Link href="/dashboard" className="flex items-center gap-2 text-lg font-semibold mb-4">
                   <Bot className="h-6 w-6" />
