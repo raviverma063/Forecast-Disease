@@ -3,7 +3,6 @@
 
 // --- FIX: Added the missing 'import React' line ---
 import React, { useState, useMemo } from 'react';
-import styles from './community.module.css'; 
 
 // Moved hospital data outside the component to prevent re-creation on every render
 const hospitalData = [
