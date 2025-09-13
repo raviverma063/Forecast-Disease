@@ -2,7 +2,7 @@
 
 'use client';
 
-import { useSidebar } from '../context/SidebarContext';
+import { useSidebar } from '../../context/SidebarContext';
 
 // 1. The Trigger Button Component
 export function SidebarTrigger({ className }: { className?: string }) {
