@@ -1,110 +1,140 @@
-/**
- * Sidebar: The main container for the sidebar itself.
- * It automatically handles showing a slide-out menu on mobile
- * and a collapsible panel on desktop.
- */
-const Sidebar = React.forwardRef<
-  HTMLDivElement,
-  React.ComponentProps<"div"> & {
-    side?: "left" | "right";
-    variant?: "sidebar" | "floating" | "inset";
-    collapsible?: "offcanvas" | "icon" | "none";
-  }
->(
-  (
-    {
-      side = "left",
-      variant = "sidebar",
-      collapsible = "offcanvas",
-      className,
-      children,
-      ...props
-    },
-    ref
-  ) => {
-    const { isMobile, state, openMobile, setOpenMobile } = useSidebar()
+// src/app/community/page.tsx
+'use client'; 
 
-    // If the sidebar is set to never collapse, it returns a simple version.
-    if (collapsible === "none") {
-      return (
-        <div
-          className={cn(
-            "flex h-full w-[--sidebar-width] flex-col bg-sidebar text-sidebar-foreground",
-            className
-          )}
-          ref={ref}
-          {...props}
-        >
-          {children}
+// --- FIX: Added the missing 'import React' line ---
+import React, { useState, useMemo } from 'react';
+import styles from './community.module.css'; 
+
+// Moved hospital data outside the component to prevent re-creation on every render
+const hospitalData = [
+  // ... (keep all your 75 hospital objects here)
+  { district: "agra", name: "Synergy Plus Hospital", type: "private", specialty: "Cardiology, Multi-speciality", contact: "0562-1234567", distance: "3.2 km" },
+  { district: "aligarh", name: "Rameshwaram Hospital", type: "private", specialty: "Multi-speciality, Trauma", contact: "0571-2345678", distance: "2.1 km" },
+  { district: "lucknow", name: "Medanta Hospital", type: "private", specialty: "Super-speciality, Organ Transplant", contact: "0522-6719999", distance: "4.2 km" },
+  { district: "varanasi", name: "Apex Hospital", type: "private", specialty: "Super-speciality, Neurology", contact: "0542-6666666", distance: "3.7 km" },
+  // ... etc.
+];
+
+const districts = [
+    "Agra", "Aligarh", "Ambedkar Nagar", "Amethi", "Amroha", "Auraiya", "Ayodhya", "Azamgarh", "Baghpat", "Bahraich", "Ballia", "Balrampur", "Banda", "Barabanki", "Bareilly", "Basti", "Bhadohi", "Bijnor", "Budaun", "Bulandshahr", "Chandauli", "Chitrakoot", "Deoria", "Etah", "Etawah", "Farrukhabad", "Fatehpur", "Firozabad", "Gautam Buddha Nagar", "Ghaziabad", "Ghazipur", "Gonda", "Gorakhpur", "Hamirpur", "Hapur", "Hardoi", "Hathras", "Jalaun", "Jaunpur", "Jhansi", "Kannauj", "Kanpur Dehat", "Kanpur Nagar", "Kasganj", "Kaushambi", "Kushinagar", "Lakhimpur Kheri", "Lalitpur", "Lucknow", "Maharajganj", "Mahoba", "Mainpuri", "Mathura", "Mau", "Meerut", "Mirzapur", "Moradabad", "Muzaffarnagar", "Pilibhit", "Pratapgarh", "Prayagraj", "Raebareli", "Rampur", "Saharanpur", "Sambhal", "Sant Kabir Nagar", "Shahjahanpur", "Shamli", "Shravasti", "Siddharthnagar", "Sitapur", "Sonbhadra", "Sultanpur", "Unnao", "Varanasi"
+];
+
+const CommunityPage = () => {
+  // State for managing the filters
+  const [selectedType, setSelectedType] = useState('all');
+  const [selectedDistrict, setSelectedDistrict] = useState('all');
+
+  // Filter the facilities based on the current state
+  const filteredFacilities = useMemo(() => {
+    return hospitalData.filter(facility => {
+      const typeMatch = selectedType === 'all' || facility.type === selectedType;
+      const districtMatch = selectedDistrict === 'all' || facility.district.toLowerCase() === selectedDistrict.toLowerCase().replace(/ /g, '-');
+      return typeMatch && districtMatch;
+    });
+  }, [selectedType, selectedDistrict]);
+
+  const capitalizeFirstLetter = (string) => {
+    return string.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+  };
+
+  return (
+    <div className={styles.container}>
+      <header className={styles.header}>
+        <h1>Uttar Pradesh Healthcare Directory</h1>
+        <p className={styles.tagline}>
+          Find government, private, and NGO healthcare facilities across all 75 districts of Uttar Pradesh
+        </p>
+      </header>
+
+      <div className={styles.filtersContainer}>
+        <div className={styles.filters}>
+          <button
+            className={`${styles.filterBtn} ${selectedType === 'all' ? styles.active : ''}`}
+            onClick={() => setSelectedType('all')}
+          >
+            All Facilities
+          </button>
+          <button
+            className={`${styles.filterBtn} ${selectedType === 'government' ? styles.active : ''}`}
+            onClick={() => setSelectedType('government')}
+          >
+            Government
+          </button>
+          <button
+            className={`${styles.filterBtn} ${selectedType === 'private' ? styles.active : ''}`}
+            onClick={() => setSelectedType('private')}
+          >
+            Private
+          </button>
+          <button
+            className={`${styles.filterBtn} ${selectedType === 'ngo' ? styles.active : ''}`}
+            onClick={() => setSelectedType('ngo')}
+          >
+            NGO
+          </button>
         </div>
-      )
-    }
 
-    // If on a mobile device, it uses a "Sheet" component to slide out.
-    if (isMobile) {
-      return (
-        <Sheet open={openMobile} onOpenChange={setOpenMobile} {...props}>
-          <SheetContent
-            data-sidebar="sidebar"
-            data-mobile="true"
-            className="w-[--sidebar-width] bg-sidebar p-0 text-sidebar-foreground [&>button]:hidden"
-            style={
-              {
-                "--sidebar-width": SIDEBAR_WIDTH_MOBILE,
-              } as React.CSSProperties
-            }
-            side={side}
+        <div className={styles.districtFilter}>
+          <select
+            className={styles.districtDropdown}
+            value={selectedDistrict}
+            onChange={(e) => setSelectedDistrict(e.target.value)}
           >
-            <div className="flex h-full w-full flex-col">{children}</div>
-          </SheetContent>
-        </Sheet>
-      )
-    }
-
-    // Otherwise, it returns the complex, collapsible desktop version.
-    return (
-      <div
-        ref={ref}
-        className="group peer hidden md:block text-sidebar-foreground"
-        data-state={state}
-        data-collapsible={state === "collapsed" ? collapsible : ""}
-        data-variant={variant}
-        data-side={side}
-      >
-        {/* This is what handles the sidebar gap on desktop */}
-        <div
-          className={cn(
-            "duration-200 relative h-svh w-[--sidebar-width] bg-transparent transition-[width] ease-linear",
-            "group-data-[collapsible=offcanvas]:w-0",
-            "group-data-[side=right]:rotate-180",
-            variant === "floating" || variant === "inset"
-              ? "group-data-[collapsible=icon]:w-[calc(var(--sidebar-width-icon)_+_theme(spacing.4))]"
-              : "group-data-[collapsible=icon]:w-[--sidebar-width-icon]"
-          )}
-        />
-        <div
-          className={cn(
-            "duration-200 fixed inset-y-0 z-10 hidden h-svh w-[--sidebar-width] transition-[left,right,width] ease-linear md:flex",
-            side === "left"
-              ? "left-0 group-data-[collapsible=offcanvas]:left-[calc(var(--sidebar-width)*-1)]"
-              : "right-0 group-data-[collapsible=offcanvas]:right-[calc(var(--sidebar-width)*-1)]",
-            // Adjust the padding for floating and inset variants.
-            variant === "floating" || variant === "inset"
-              ? "p-2 group-data-[collapsible=icon]:w-[calc(var(--sidebar-width-icon)_+_theme(spacing.4)_+2px)]"
-              : "group-data-[collapsible=icon]:w-[--sidebar-width-icon] group-data-[side=left]:border-r group-data-[side=right]:border-l",
-            className
-          )}
-          {...props}
-        >
-          <div
-            data-sidebar="sidebar"
-            className="flex h-full w-full flex-col bg-sidebar group-data-[variant=floating]:rounded-lg group-data-[variant=floating]:border group-data-[variant=floating]:border-sidebar-border group-data-[variant=floating]:shadow"
-          >
-            {children}
-          </div>
+            <option value="all">All Districts</option>
+            {districts.map(district => (
+              <option key={district} value={district.toLowerCase().replace(/ /g, '-')}>
+                {district}
+              </option>
+            ))}
+          </select>
         </div>
       </div>
-    )
-  }
-)
-Sidebar.displayName = "Sidebar";
+
+      <div className={styles.facilitiesList}>
+        {filteredFacilities.length > 0 ? (
+          filteredFacilities.map((facility, index) => {
+            const typeClass = facility.type; // 'government', 'private', or 'ngo'
+            const typeLabel = facility.type.charAt(0).toUpperCase() + facility.type.slice(1);
+            
+            return (
+              <div key={index} className={styles.facilityCard}>
+                <div className={styles.facilityName}>
+                  <span>{facility.name}</span>
+                  <span className={`${styles.facilityType} ${styles[typeClass]}`}>{typeLabel}</span>
+                </div>
+                <div className={styles.facilityDetails}>
+                  <div className={styles.detailItem}>
+                    <i className="fas fa-map-marker-alt"></i>
+                    <span>{capitalizeFirstLetter(facility.district)} • {facility.distance} away</span>
+                  </div>
+                  <div className={styles.detailItem}>
+                    <i className="fas fa-stethoscope"></i>
+                    <span>{facility.specialty}</span>
+                  </div>
+                  <div className={styles.detailItem}>
+                    <i className="fas fa-phone"></i>
+                    <span>{facility.contact}</span>
+                  </div>
+                </div>
+                <a href="#" className={styles.actionBtn}>Get Directions</a>
+              </div>
+            );
+          })
+        ) : (
+          <div className={styles.noResults}>
+            <i className="fas fa-hospital-user"></i>
+            <h3>No facilities found</h3>
+            <p>Try selecting a different filter combination</p>
+          </div>
+        )}
+      </div>
+      
+      <footer className={styles.footer}>
+        <p>Uttar Pradesh Healthcare Directory &copy; 2025 | Connecting you to healthcare facilities across all 75 districts</p>
+        <p>For emergencies, dial 108 for ambulance services | Health Helpline: 104</p>
+      </footer>
+    </div>
+  );
+};
+
+export default CommunityPage;
